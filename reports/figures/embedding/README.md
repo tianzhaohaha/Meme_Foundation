@@ -16,3 +16,9 @@ Binary保留原二分类头，其七类着色来自真实标签，不代表模�
 ![fusion pca](fusion_pca_seven.png)
 
 ![fusion tsne](fusion_tsne_seven.png)
+
+新增类中心图直接在原256维空间计算：逐样本L2归一化后，按七类真值求均值，再求类中心间余弦；不使用二维投影。四模型统一0–1色标，Binary仍为原二分类头。
+
+![fusion class centers](fusion_centroid_similarity.png)
+
+定义、统计和解释边界见[完整特征报告](../../embedding_visualization.md)。类中心接近不等于每个样本重叠，不能直接用相似度给模型排名。

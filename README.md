@@ -15,9 +15,9 @@
 | V5 Reset fusion | 共享源二分类编码器 → 重新初始化融合层及七分类头 → 5k七分类 | 全参数；与V2相比只改变融合层初始化 |
 | V6 Tune fusion | 共享源二分类编码器和融合层 → 新七分类头 → 5k七分类 | 冻结两个编码器，训练融合层及头；395,783个参数 |
 
-本仓库保存源代码、固定样本清单、测试和已核验的聚合实验报告。数据ZIP、图片/文本、模型权重、环境缓存、运行日志和凭据均不在Git中。
+本仓库保存源代码、固定样本清单、测试和已核验的实验报告。报告包含少量样本缩略图/文本节选；完整数据ZIP与图片/文本集合、模型权重、环境缓存、运行日志和凭据均不在Git中。
 
-**数据获取说明：** 本次使用的 `subset_50000.zip` 暂无公开下载地址，需要向仓库维护者获取相同数据包。仅克隆本仓库即可阅读报告、检查代码和重绘已有结果；完整训练还需要数据包、预训练模型及GPU。本仓库不分发任何实验checkpoint，迁移实验所需的二分类源模型会在首次运行时自动训练。
+**数据获取说明：** 本次使用的 `subset_50000.zip` 暂无公开下载地址，需要向仓库维护者获取相同数据包。仅克隆本仓库即可阅读报告、检查代码和重绘聚合训练/评估图；重新生成数据样例和特征图需要对应数据或特征，见[可视化说明](docs/report_visualizations.md)。完整训练还需要数据包、预训练模型及GPU。本仓库不分发任何实验checkpoint，迁移实验所需的二分类源模型会在首次运行时自动训练。
 
 ## 从 GitHub 开始
 
@@ -57,11 +57,13 @@ seed42，NVIDIA H200 NVL，batch16，FP32；七个监督训练W&B run均已完�
 
 - [完整结果分析与W&B链接](reports/experiment_review.md)
 - [全部报告与图表导航](reports/README.md)
+- [Dataset-side：标签分布、原始样本与预处理](reports/dataset_review.md)
+- [输入质量分析](reports/experiment_review.md#输入质量与预处理影响)与[模型错误对照](reports/experiment_review.md#模型错误对照同一validation上的共同错误与分歧)
 - [checkpoint逐文件对应表](reports/checkpoints.md) / [CSV](reports/checkpoints.csv)
 - [可重绘的聚合数据](reports/data/seed42.json)
 - [实验配置与比较口径](docs/experiment_protocol.md)
 - [Qwen零样本validation协议及运行命令](docs/vlm_validation.md)
-- [Binary/V4/V5/V6的PCA与t-SNE可视化报告](reports/embedding_visualization.md)
+- [Binary/V4/V5/V6的PCA、t-SNE与类中心可视化报告](reports/embedding_visualization.md)
 
 ## 目录
 
@@ -267,8 +269,10 @@ python tools/plot_results.py
 
 旧的单独二分类入口 `training/run_train.sh ZIP`仍保留，它使用原20k内部训练/验证划分，与六版本实验不同，不应混合比较。完整复现请使用 `run_all_nohup.sh --suite all`；不指定suite时仅运行V1→V2→V3，`run_fusion_nohup.sh`仅运行V5→V6。
 
+新增数据与模型可视化的生成方法见[说明](docs/report_visualizations.md)。这些分析需要原始数据或本地提取特征；无需重新训练，也不需要GPU推理。
+
 ## 发布范围
 
-仓库只跟踪代码、依赖版本、样本ID/标签清单、数据指纹、测试及技术报告，另保存Qwen的逐样本标签预测以便核验指标。checkpoint索引是历史文件的元数据，不代表GitHub提供了对应权重；重新训练后会生成自己的checkpoint。
+仓库跟踪代码、依赖版本、样本ID/标签清单、数据指纹、测试及技术报告，另保存V4/V5/V6与Qwen的逐样本validation预测、数值输入质量统计和报告中的少量样本展示。checkpoint索引是历史文件的元数据，不代表GitHub提供了对应权重；重新训练后会生成自己的checkpoint。
 
 数据包目前需向仓库维护者获取。预训练模型由训练代码从其官方来源下载，数据和预训练模型遵循各自使用条件。本仓库暂未附通用开源许可证。

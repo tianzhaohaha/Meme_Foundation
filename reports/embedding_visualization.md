@@ -1,4 +1,4 @@
-# Binary、V4、V5、V6的PCA与t-SNE可视化
+# Binary、V4、V5、V6的特征可视化：PCA、t-SNE与类中心
 
 实验日期：2026-10-24，Asia/Singapore。本报告与[六版本监督实验及Qwen评估](experiment_review.md)并列，单独展示已有checkpoint的融合特征。此次仅提取特征和降维绘图，没有训练新模型、训练分类探针或搜索可视化参数。
 
@@ -86,13 +86,37 @@ V4/V5/V6没有形成七个完全分离的簇。本报告不据图对三者做新
 
 四个模型都保留了明显的极性结构，同时存在两种颜色交叉的区域。源模型的粗粒度方向最直观，但这不意味着它在七分类上更强。对照七类图可看到：一些在极性图中较单一的区域，实际上包含多个同极性的情绪类别。正负情绪分得开，与七种细类分得开，是不同的观察目标。
 
+## 七个类中心的相似度：直接查看256维融合空间
+
+![四模型的七类中心余弦相似度](figures/embedding/fusion_centroid_similarity.png)
+
+[下载类中心相似度PDF](figures/embedding/fusion_centroid_similarity.pdf)
+
+这张图直接使用相同2,000条validation的原始256维融合特征，**不使用PCA或t-SNE坐标**。每条特征先做L2归一化，按真实七类求均值，再对七个均值计算余弦相似度。Binary仍保留二分类头，只用七类真实标签分组求均值，没有训练七分类探针。四个面板统一使用0–1色标，对角线恒为1。
+
+| 模型 | Happy–Love | 同极性不同类别平均相似度 | 跨极性类别平均相似度 |
+|---|---:|---:|---:|
+| Binary | 0.9981 | 0.9885 | 0.7556 |
+| V4 | 0.9603 | 0.7881 | 0.6148 |
+| V5 | 0.9749 | 0.8526 | 0.7092 |
+| V6 | 0.9771 | 0.8530 | 0.6166 |
+
+平均值按不重复类别对等权计算，排除对角线：同极性共9对，跨极性共12对；不是按样本数加权。完整数值保留在[矩阵CSV](data/fusion_centroid_similarity.csv)与[定义及汇总JSON](data/fusion_centroid_similarity.json)。
+
+Binary中同极性类别的中心方向非常接近；Happy–Love为0.9981，Angry–Fear为0.9965。这与二分类目标下的粗粒度结构相符，但不等于每个样本完全重叠或细分类信息不可恢复。V4/V5/V6中，同极性类别中心的平均相似度均低于Binary；V6冻结源编码器后仍发生这一变化，与融合层能够改变类别表示的观察一致。
+
+Happy–Love是四个模型中相似度最高的非对角类别对，直接补充了散点图中二者混合的现象。V4这一对为0.9603，V5/V6约0.975/0.977，仍很接近；仅凭这些数值不能推导分类accuracy或判断预测时的混淆方向。
+
+**解释边界：** 特征位于ReLU之后，全部非负，共同方向本身就会抬高余弦值；本分析没有做全局中心化。类中心也会掩盖同类内部的分散与多峰结构。均值方向不同不等于分布完全分离，余弦较低不等于模型更准确。JSON同时保留各类“单位特征均值的长度”以描述集中程度，但本报告不把它或类间余弦作为新的性能排名指标。
+
 ## 文件与复现
 
-本次生成四张四模型对照图，每张同时保存PNG和PDF。二维坐标和设置随报告提供：
+本报告包含四张PCA/t-SNE对照图和一张四模型类中心相似度图，每张同时保存PNG和PDF。二维坐标和设置随报告提供：
 
 - [Binary坐标](figures/embedding/Binary_fusion_coordinates.csv)、[V4坐标](figures/embedding/V4_fusion_coordinates.csv)、[V5坐标](figures/embedding/V5_fusion_coordinates.csv)、[V6坐标](figures/embedding/V6_fusion_coordinates.csv)：每份2,000行，与固定validation ID和顺序一致。
 - [投影设置](figures/embedding/projection_settings.json)：记录投影超参数、软件版本、解释方差及checkpoint来源。
 - [提取核验记录](data/embedding_visualization.json)：记录指标复现、输入指纹、源checkpoint关系和特征文件哈希。
+- [类中心矩阵](data/fusion_centroid_similarity.csv)及[汇总JSON](data/fusion_centroid_similarity.json)：4×7×7个相似度、类内集中程度和checkpoint哈希。
 
 原始特征NPZ及逐模型JSON保存在本机 `embedding_analysis/results/features/`，没有上传GitHub；代码、图表、二维坐标和分析报告已纳入发布范围。NPZ不包含模型权重或原始图片/文本，可在有需要时单独使用；公开二维坐标可以复核散点位置，但不能代替高维特征重新拟合PCA/t-SNE。
 
@@ -116,3 +140,5 @@ python -m embedding_analysis \
 ```
 
 详见[模块说明](../embedding_analysis/README.md)。默认输出到 `embedding_analysis/results/`，不会覆盖本报告。提取和绘图均会检查指标及样本一致性；不同来源、标签顺序或验证复现失败的文件会被拒绝。新增4项针对性测试通过，涵盖二分类标签映射、源模型歧义、验证复现失败及绘图样本错位。
+
+本次类中心图复用已提取的同一批NPZ，未增加推理或训练；生成命令和额外核验见[数据与模型可视化复现说明](../docs/report_visualizations.md)。

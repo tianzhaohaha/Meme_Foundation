@@ -1,8 +1,35 @@
 # 六版本监督实验与Qwen零样本评估
 
-另见并列的[Binary/V4/V5/V6特征可视化报告](embedding_visualization.md)：使用相同validation，展示256维融合特征的PCA/t-SNE七类与极性着色，不增加训练实验。
+另见并列的[数据集报告](dataset_review.md)（类别占比、原始样本与预处理对照）和[Binary/V4/V5/V6特征可视化报告](embedding_visualization.md)（PCA/t-SNE、类中心相似度）。本页开头展示输入质量，末尾展示同一validation上的模型错误对照。
 
 实验日期：2026-10-24，Asia/Singapore。原V1→V2→V3队列约16:23–17:09；V4随后独立补跑，V5→V6于19:38–19:47在相同GPU上串行补跑。原六个监督方案使用ViT-B/16 + RoBERTa-base、seed42、同一NVIDIA H200 NVL、batch16与FP32。依据为W&B live API和本地结果，七个训练run均为finished，关键summary与逐epoch指标已核对一致（允许浮点序列化舍入误差）。同日新增两个Qwen零样本validation评估run，结果单独列于后文；均未覆盖历史模型和结果。
+
+## 输入质量与预处理影响
+
+以下统计覆盖本次实际使用的29,000条记录：Source 20k、Target 5k、Validation 2k、Test 2k。重新读取原始ZIP，核验数据包、清单指纹、每条原图哈希和清洗文本，结果与原训练缓存及既有审计一致。这里只补充描述性分析，没有根据test统计修改训练或选择可视化参数。
+
+![文本长度、空文本、截断比例和原图尺寸分布](figures/dataset/input_quality.png)
+
+[下载输入质量PDF](figures/dataset/input_quality.pdf)
+
+| 划分 | 样本数 | 清洗后空文本 | 超过96 tokens | 清洗后token数中位数 / P95 | 极端图片宽高比 |
+|---|---:|---:|---:|---:|---:|
+| Source | 20,000 | 264（1.32%） | 3,496（17.48%） | 25 / 176 | 498（2.49%） |
+| Target | 5,000 | 67（1.34%） | 878（17.56%） | 25 / 175 | 144（2.88%） |
+| Validation | 2,000 | 26（1.30%） | 364（18.20%） | 29 / 158.05 | 33（1.65%） |
+| Test | 2,000 | 27（1.35%） | 372（18.60%） | 29 / 185 | 54（2.70%） |
+
+token数由原训练固定revision的RoBERTa tokenizer计算，包含首尾特殊token，不是单词数。清洗后总数大于96才会截断，validation的364条与此前Qwen输入限制记录一致。空文本仍产生特殊token；Qwen看到的是相同RoBERTa截断边界对应的文本前缀，表中数值不是Qwen自身tokenizer的长度。
+
+“极端宽高比”定义为EXIF校正后的 `width/height < 0.5` 或 `> 2`。图像尺寸图统计原图，所有实际输入仍为224×224等比例填充的JPEG。Source/Target分别只有78/16条原图长边小于224，Validation/Test为2/3条；多数图像会缩小，有些文字细节可能随之变得难读。尺寸和截断统计本身不能量化这种变化造成了多少准确率损失。
+
+![按真实类别统计文本截断与空文本比例](figures/dataset/input_quality_by_label.png)
+
+[下载分标签质量PDF](figures/dataset/input_quality_by_label.pdf)
+
+输入问题并非均匀分布在七个类别中：Target的Love有309/883条（35.00%）被截断、45/883条（5.10%）清洗为空；Happy截断365/1290条（28.29%）。Validation的Love截断120/346条（34.68%）、空文本18/346条（5.20%）。这提示分析Love/Happy的混淆时应关注文本长度与可用信息，但不能据此认定截断导致了它们的全部错误。
+
+Source与Target的总体长度、空文本和截断比例接近。当前结果不支持仅用这几个总体统计解释V2/V5与V4的效果差异。各模型沿用相同预处理；改变截断长度或图像分辨率需要单独对照实验，本次没有进行此类修改。完整[数值CSV](data/input_quality.csv)、[分组统计JSON](data/dataset_visualization.json)与[数据集报告](dataset_review.md)可用于复核。
 
 ## 配置与比较关系
 
@@ -168,7 +195,48 @@ V3从未预测Angry，把84.1%的样本预测成Happy或Bored，说明accuracy�
 
 - V4补齐了“仅有5k七分类标签、不先做源二分类训练”的基线；与V2比较时同时看最终质量、5k阶段成本和完整方案成本。
 - V1使用额外20k细类标签。相同epoch上限不等于相同训练步数或计算预算；本实验不是固定算力消融。
-- 六版监督实验当前只有seed42，未做多seed显著性检验，也没有保存这些模型的逐样本预测供配对检验；新增Qwen评估单独保留了逐样本validation预测。V4是在已查看前三版测试结果后提出的补充基线，但其训练超参数保持原值；如继续根据这些结果优化方案，应使用新的独立最终评估。
+- 六版监督实验当前只有seed42，未做多seed显著性检验，历史test评估未保留逐样本预测。后续特征提取保留了V4/V5/V6的validation概率，本报告末尾将它们与Qwen逐样本validation预测对齐分析；这不等于补齐独立test配对检验。V4是在已查看前三版测试结果后提出的补充基线，但其训练超参数保持原值；如继续根据这些结果优化方案，应使用新的独立最终评估。
 - 源/目标清单仍共有227个图片哈希；验证/测试已排除精确图片和规范化非空文本重复，但没有完整近重复或跨用户审计。
 
-所有21个checkpoint的历史对应关系见[文件索引](checkpoints.md)。完整指标见[聚合JSON](data/seed42.json)和[CSV](comparison.csv)，图表用 `python tools/plot_results.py` 重绘。GitHub仅发布代码和分析材料，不包含checkpoint或原始数据；获取相同数据后可按[复现指南](../docs/reproduction.md)重新训练。
+所有21个checkpoint的历史对应关系见[文件索引](checkpoints.md)。完整指标见[聚合JSON](data/seed42.json)和[CSV](comparison.csv)，训练图表用 `python tools/plot_results.py` 重绘。GitHub发布代码、分析材料及报告中的少量样本缩略图/文本节选，不包含checkpoint或完整原始数据；获取相同数据后可按[复现指南](../docs/reproduction.md)重新训练。
+
+## 模型错误对照：同一validation上的共同错误与分歧
+
+比较V4、V5、V6与Qwen3-VL 4B/8B。监督预测来自已经核验的特征NPZ中的七分类概率，Qwen预测来自既有逐样本CSV；没有重新训练、修改模型或重新运行Qwen。按ID核对全部2,000条真实标签，重新计算五个模型的accuracy/macro-F1，与前文validation结果一致。Qwen的1/3条Invalid仍计错，未被排除。
+
+**以下全部是validation分析，不是前文test结果。** 监督模型曾在此集合选模，Qwen未在此集合调整提示；这些差异用于描述当前运行的错误模式。共享源模型只有二分类头，因此不混入七分类错误表；V1–V3本次也未新增逐样本推理。
+
+![五模型的共同错误、互补预测与答对模型数量](figures/errors/error_overlap.png)
+
+[下载错误重叠PDF](figures/errors/error_overlap.pdf)
+
+左图的单元格为两个模型**都答错**的样本数，对角线是该模型错误总数；中图为“行模型正确、列模型错误”的样本数，方向不可互换。左图共同答错不要求两模型预测成同一错误标签。
+
+- 五个模型全部答对539条（26.95%），全部答错435条（21.75%）。其余1,026条有正确性分歧。
+- V4/V6分别答对1,130/1,126条，差距只有4条，但V4正确而V6错误有154条，反向有150条，说明相近accuracy不代表同样的错误集合。
+- V4正确而Qwen 8B错误有432条，反向有280条。零样本VLM整体accuracy较低，但仍能答对一部分监督模型答错的记录。
+- 三个监督模型全对、两个Qwen全错有250条；反向情形有156条。至少一个模型正确共有1,565条（78.25%），这只是使用真值观察到的覆盖率，**不是已经实现的集成模型accuracy**。
+
+### 五种诊断案例
+
+先保留V4全部错误中最大softmax的记录，再在四种固定条件内按 `SHA256("42:" + ID)` 选取一例，排除已选ID。条件分别为：全部模型错误、监督全对且VLM全错、VLM全对且监督全错、监督模型正确性不一致。案例用于展示分歧，不用于估计总体比例，比例以全部2,000条统计为准。
+
+![同一图文样本的五模型预测对照](figures/errors/error_cases.png)
+
+[下载错误案例PDF](figures/errors/error_cases.pdf)
+
+图中图像采用实际224×224输入形式，真值来自原数据标注。Softmax为各监督模型最大类别概率，未经校准，不等同于真实答对概率；Qwen原记录没有保存可比的置信度，标为“not recorded”。文本中的“…”仅为报告展示节选，右侧前缀按实际96-token边界还原。
+
+| 选择条件 | ID | 真值 | 原始文本节选 | 模型保留的清洗文本前缀 |
+|---|---|---|---|---|
+| All five wrong | 415 | Angry | drawings I gone and done | drawings I gone and done |
+| All supervised correct; both VLMs wrong | 39731 | Bored | Left alone yesterday afternoon &amp; looking for a distraction, I decided to finish this up. | Left alone yesterday afternoon &amp; looking for a distraction, I decided to finish this up. |
+| Both VLMs correct; all supervised wrong | 13956 | Angry | #Repost @starwars\_crzy\_fanz ・・? 🔹Look at me 👆👆😡 🔹I will kill you 🔪🔫🔫👊 ⚫DARTH MAUL? 🔸Sith 🔥🔥 #starwars #starwarsnerd #starwarsfan #starwarsfans #starwarsgeek #darthmaul #sith #darkness #darkside #starwarsart #art #nicepic… | #Repost @starwars\_crzy\_fanz ・・? 🔹Look at me 👆👆😡 🔹I will kill you 🔪🔫🔫👊 ⚫DARTH MAUL? 🔸Sith 🔥🔥 #starwars #starwarsnerd #starwarsfan #starwarsfans #starwarsgeek |
+| Supervised models disagree in correctness | 175092 | Sad | i feel like i’m trapped in my own skin where I can’t do anything but let this beast known as my mind control my every thought and move. | i feel like i’m trapped in my own skin where I can’t do anything but let this beast known as my mind control my every thought and move. |
+| Highest-confidence V4 error | 179065 | Sad | Bored :/. | Bored :/. |
+
+ID 179065的原标签是Sad，配套文本却直接写着“Bored :/.”，五个模型都预测Bored，V4最大softmax为0.875。该例说明按数据集真值计错的样本可能同时存在图文语义与标注的张力，不能只看高置信度就判定模型无理由出错，也不能据一个例子宣称数据集标注普遍有误。这里仍严格沿用原标签计分，没有重新标注。
+
+ID 13956中两版Qwen均预测正确而三个监督模型均错误；ID 175092中V4和两版Qwen预测正确，V5/V6错误。它们展示本次模型的互补性，不构成某一模态独立贡献或迁移机制的因果证明。
+
+完整依据见[10,000条模型—样本预测CSV](data/model_error_predictions.csv)、[错误统计与选择记录](data/model_error_analysis.json)、[案例文本](data/error_case_captions.md)。生成方式见[可视化复现说明](../docs/report_visualizations.md)。

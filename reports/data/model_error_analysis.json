@@ -1,0 +1,160 @@
+{
+  "split": "validation",
+  "n": 2000,
+  "models": [
+    "V4",
+    "V5",
+    "V6",
+    "Qwen 4B",
+    "Qwen 8B"
+  ],
+  "metrics": {
+    "V4": {
+      "accuracy": 0.565,
+      "macro_f1": 0.5423889004298481
+    },
+    "V5": {
+      "accuracy": 0.548,
+      "macro_f1": 0.5178129830289993
+    },
+    "V6": {
+      "accuracy": 0.563,
+      "macro_f1": 0.5340142477718036
+    },
+    "Qwen 4B": {
+      "accuracy": 0.4775,
+      "macro_f1": 0.45377448345810534
+    },
+    "Qwen 8B": {
+      "accuracy": 0.489,
+      "macro_f1": 0.47284929320314123
+    }
+  },
+  "shared_error_counts": [
+    [
+      870,
+      712,
+      720,
+      601,
+      590
+    ],
+    [
+      712,
+      904,
+      769,
+      608,
+      606
+    ],
+    [
+      720,
+      769,
+      874,
+      612,
+      597
+    ],
+    [
+      601,
+      608,
+      612,
+      1045,
+      920
+    ],
+    [
+      590,
+      606,
+      597,
+      920,
+      1022
+    ]
+  ],
+  "row_correct_column_wrong": [
+    [
+      0,
+      192,
+      154,
+      444,
+      432
+    ],
+    [
+      158,
+      0,
+      105,
+      437,
+      416
+    ],
+    [
+      150,
+      135,
+      0,
+      433,
+      425
+    ],
+    [
+      269,
+      296,
+      262,
+      0,
+      102
+    ],
+    [
+      280,
+      298,
+      277,
+      125,
+      0
+    ]
+  ],
+  "correct_models_histogram": [
+    435,
+    191,
+    298,
+    345,
+    192,
+    539
+  ],
+  "cases": [
+    {
+      "reason": "All five wrong",
+      "id": "415",
+      "index": 1196,
+      "candidate_count": 435
+    },
+    {
+      "reason": "All supervised correct; both VLMs wrong",
+      "id": "39731",
+      "index": 1508,
+      "candidate_count": 250
+    },
+    {
+      "reason": "Both VLMs correct; all supervised wrong",
+      "id": "13956",
+      "index": 1876,
+      "candidate_count": 156
+    },
+    {
+      "reason": "Supervised models disagree in correctness",
+      "id": "175092",
+      "index": 656,
+      "candidate_count": 447
+    },
+    {
+      "reason": "Highest-confidence V4 error",
+      "id": "179065",
+      "index": 1641,
+      "candidate_count": 870
+    }
+  ],
+  "selection_policy": "Reserve the highest V4 max-softmax error for the last case. Other cases use fixed SHA256(42:ID) ordering within predefined conditions, excluding the reserved and already selected IDs.",
+  "source_feature_sha256": {
+    "Binary": "b7ddba52449fb4c32731e68e460a0a02d9912d72878a0a2823b1580092d32580",
+    "V4": "92ddade09d5c082082ba951b538d2030ddb974c98874facb964843915938d8ca",
+    "V5": "4ec434b00c9d4e0b765101f3357d368e61d3b5d51930df453a1b08d449b5c832",
+    "V6": "e1a277a87c29403198704cf70f8cf1ad0ff2a0f3a4125e709829fba81fd80364"
+  },
+  "source_vlm_predictions_sha256": "04411ce71821b7f7adacc05bdbfaa96834b4008d9a4abecef5515ffeb57ac5e2",
+  "checks": {
+    "ids_labels_images_match_manifest": true,
+    "all_metrics_match_historical": true
+  },
+  "scope": "No new inference/training. Validation selected supervised checkpoints. Qwen Invalid counts as wrong. Softmax not calibrated; no VLM confidence available."
+}
