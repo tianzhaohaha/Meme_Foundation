@@ -1,0 +1,357 @@
+{
+  "scope": "5k downstream adaptation only | Foundation pretraining excluded (model already available)",
+  "source_pretraining_included": false,
+  "primary_time_field": "efficiency.stage_wall_seconds of the selected seven-class run",
+  "stage_time_definition": "Completed downstream stage: setup, training loop, validation, checkpoint writes, final test, residual overhead; includes early-stopping patience epochs.",
+  "memory_definition": "Recorded peak PyTorch allocated GPU memory in the downstream train/validation epochs; not total device memory or inference memory.",
+  "quality_definition": "Validation-selected best.pt; its validation and final test scores are kept separate, not the last epoch scores.",
+  "common_config": {
+    "architecture": "multimodal",
+    "num_classes": 7,
+    "seed": 42,
+    "split_seed": 42,
+    "batch_size": 16,
+    "epochs": 20,
+    "patience": 4,
+    "encoder_lr": 5e-06,
+    "head_lr": 0.0001,
+    "dropout": 0.5,
+    "weight_decay": 0.01,
+    "warmup_ratio": 0.05,
+    "max_length": 96,
+    "selection_metric": "accuracy",
+    "sample_counts": {
+      "train": 5000,
+      "validation": 2000,
+      "test": 2000
+    },
+    "total_parameters": 210249479,
+    "gpu_name": "NVIDIA H200 NVL",
+    "torch_version": "2.8.0+cu128",
+    "cuda_version": "12.8",
+    "dataset_id": "a9f13a8df640afb82d4e1f233841e2db229eb40a641ae0a1cad79c01b5003ab0"
+  },
+  "source_checkpoint_sha256": "a098806de821c9d0fde3d90399fa5ef4de06fff4b9c774de6495a97b0d18ee53",
+  "runs": [
+    {
+      "model": "V4",
+      "variant": "direct_5k",
+      "validation_accuracy": 0.565,
+      "validation_macro_f1": 0.5423889004298481,
+      "test_accuracy": 0.569,
+      "test_macro_f1": 0.5483995921132558,
+      "downstream_stage_seconds": 517.7016885560006,
+      "downstream_stage_minutes": 8.628361475933342,
+      "train_seconds": 397.36052254773676,
+      "validation_seconds": 61.166369495913386,
+      "checkpoint_seconds": 48.379697209224105,
+      "setup_seconds": 4.094716370105743,
+      "test_seconds": 6.657763419672847,
+      "other_stage_seconds": 0.04261951334774494,
+      "peak_allocated_gpu_gib": 5.230949401855469,
+      "peak_reserved_gpu_gib": 5.923828125,
+      "trainable_parameters": 210249479,
+      "total_parameters": 210249479,
+      "trainable_percent": 100.0,
+      "epochs": 12,
+      "best_epoch": 8,
+      "optimizer_steps": 3756,
+      "samples_seen": 60000,
+      "train_seconds_per_epoch": 33.113376878978066,
+      "milliseconds_per_step": 105.79353635456249,
+      "samples_per_second": 150.99637884332589,
+      "selected_epoch_stage_seconds_retrospective": 342.9384371303022,
+      "stage_speedup_vs_v4": 1.0,
+      "stage_time_reduction_vs_v4_pct": 0.0,
+      "allocated_memory_reduction_vs_v4_pct": 0.0,
+      "throughput_ratio_vs_v4": 1.0,
+      "validation_accuracy_delta_vs_v4_pp": 0.0,
+      "test_accuracy_delta_vs_v4_pp": 0.0,
+      "wandb_url": "https://forge.coreweave.com/wandb/ql2505-columbia-university/tumemo-training-comparison/runs/91fae8eb7f88"
+    },
+    {
+      "model": "V5",
+      "variant": "reset_fusion",
+      "validation_accuracy": 0.548,
+      "validation_macro_f1": 0.5178129830289993,
+      "test_accuracy": 0.5485,
+      "test_macro_f1": 0.5282801481253323,
+      "downstream_stage_seconds": 351.8587320204824,
+      "downstream_stage_minutes": 5.864312200341374,
+      "train_seconds": 265.33454475551844,
+      "validation_seconds": 40.139749493449926,
+      "checkpoint_seconds": 32.70745949819684,
+      "setup_seconds": 7.303251791745424,
+      "test_seconds": 6.341757867485285,
+      "other_stage_seconds": 0.03196861408650875,
+      "peak_allocated_gpu_gib": 5.230949401855469,
+      "peak_reserved_gpu_gib": 5.923828125,
+      "trainable_parameters": 210249479,
+      "total_parameters": 210249479,
+      "trainable_percent": 100.0,
+      "epochs": 8,
+      "best_epoch": 4,
+      "optimizer_steps": 2504,
+      "samples_seen": 40000,
+      "train_seconds_per_epoch": 33.166818094439805,
+      "milliseconds_per_step": 105.964275062108,
+      "samples_per_second": 150.75308055668495,
+      "selected_epoch_stage_seconds_retrospective": 175.73765503242612,
+      "stage_speedup_vs_v4": 1.4713339230866782,
+      "stage_time_reduction_vs_v4_pct": 32.03446312838879,
+      "allocated_memory_reduction_vs_v4_pct": 0.0,
+      "throughput_ratio_vs_v4": 0.9983887144280899,
+      "validation_accuracy_delta_vs_v4_pp": -1.6999999999999904,
+      "test_accuracy_delta_vs_v4_pp": -2.0499999999999963,
+      "wandb_url": "https://forge.coreweave.com/wandb/ql2505-columbia-university/tumemo-training-comparison/runs/2214987ad17a"
+    },
+    {
+      "model": "V6",
+      "variant": "tune_fusion",
+      "validation_accuracy": 0.563,
+      "validation_macro_f1": 0.5340142477718036,
+      "test_accuracy": 0.5475,
+      "test_macro_f1": 0.5276105525072142,
+      "downstream_stage_seconds": 167.87228005565703,
+      "downstream_stage_minutes": 2.7978713342609507,
+      "train_seconds": 103.62068145908415,
+      "validation_seconds": 39.90539477951825,
+      "checkpoint_seconds": 10.58673264272511,
+      "setup_seconds": 8.011200249195099,
+      "test_seconds": 5.712805366143584,
+      "other_stage_seconds": 0.035465558990836143,
+      "peak_allocated_gpu_gib": 0.9795622825622559,
+      "peak_reserved_gpu_gib": 1.099609375,
+      "trainable_parameters": 395783,
+      "total_parameters": 210249479,
+      "trainable_percent": 0.1882444617139812,
+      "epochs": 8,
+      "best_epoch": 4,
+      "optimizer_steps": 2504,
+      "samples_seen": 40000,
+      "train_seconds_per_epoch": 12.95258518238552,
+      "milliseconds_per_step": 41.38206128557674,
+      "samples_per_second": 386.02332504244794,
+      "selected_epoch_stage_seconds_retrospective": 86.0160068962723,
+      "stage_speedup_vs_v4": 3.083902168865281,
+      "stage_time_reduction_vs_v4_pct": 67.57354983255033,
+      "allocated_memory_reduction_vs_v4_pct": 81.27371902670679,
+      "throughput_ratio_vs_v4": 2.556507169241366,
+      "validation_accuracy_delta_vs_v4_pp": -0.20000000000000018,
+      "test_accuracy_delta_vs_v4_pp": -2.1499999999999964,
+      "wandb_url": "https://forge.coreweave.com/wandb/ql2505-columbia-university/tumemo-training-comparison/runs/dd4a5a95db85"
+    }
+  ],
+  "histories": {
+    "V4": [
+      {
+        "epoch": 1,
+        "val_accuracy": 0.369,
+        "val_macro_f1": 0.26751343416394274,
+        "cumulative_train_seconds": 33.58201741799712,
+        "cumulative_stage_seconds": 46.370349176228046
+      },
+      {
+        "epoch": 2,
+        "val_accuracy": 0.5,
+        "val_macro_f1": 0.4301358266139376,
+        "cumulative_train_seconds": 66.67792860232294,
+        "cumulative_stage_seconds": 88.98763974942267
+      },
+      {
+        "epoch": 3,
+        "val_accuracy": 0.548,
+        "val_macro_f1": 0.5226210507662317,
+        "cumulative_train_seconds": 99.85095796361566,
+        "cumulative_stage_seconds": 131.67447626031935
+      },
+      {
+        "epoch": 4,
+        "val_accuracy": 0.5615,
+        "val_macro_f1": 0.5436704637075309,
+        "cumulative_train_seconds": 133.02770276926458,
+        "cumulative_stage_seconds": 174.38482154533267
+      },
+      {
+        "epoch": 5,
+        "val_accuracy": 0.5565,
+        "val_macro_f1": 0.5301394487464968,
+        "cumulative_train_seconds": 166.02985279634595,
+        "cumulative_stage_seconds": 216.19975712895393
+      },
+      {
+        "epoch": 6,
+        "val_accuracy": 0.561,
+        "val_macro_f1": 0.53715984086268,
+        "cumulative_train_seconds": 199.06110568530858,
+        "cumulative_stage_seconds": 258.27486237697303
+      },
+      {
+        "epoch": 7,
+        "val_accuracy": 0.553,
+        "val_macro_f1": 0.523678328025827,
+        "cumulative_train_seconds": 232.01545752957463,
+        "cumulative_stage_seconds": 300.029162036255
+      },
+      {
+        "epoch": 8,
+        "val_accuracy": 0.565,
+        "val_macro_f1": 0.5423889004298481,
+        "cumulative_train_seconds": 264.97291135787964,
+        "cumulative_stage_seconds": 342.9384371303022
+      },
+      {
+        "epoch": 9,
+        "val_accuracy": 0.56,
+        "val_macro_f1": 0.5314961126989103,
+        "cumulative_train_seconds": 298.005796039477,
+        "cumulative_stage_seconds": 384.87757448107004
+      },
+      {
+        "epoch": 10,
+        "val_accuracy": 0.5595,
+        "val_macro_f1": 0.542630509567974,
+        "cumulative_train_seconds": 331.1650201063603,
+        "cumulative_stage_seconds": 426.8680338077247
+      },
+      {
+        "epoch": 11,
+        "val_accuracy": 0.549,
+        "val_macro_f1": 0.5312362676686236,
+        "cumulative_train_seconds": 364.28254136256874,
+        "cumulative_stage_seconds": 468.8433524053544
+      },
+      {
+        "epoch": 12,
+        "val_accuracy": 0.55,
+        "val_macro_f1": 0.5268964927419263,
+        "cumulative_train_seconds": 397.36052254773676,
+        "cumulative_stage_seconds": 511.0407135654241
+      }
+    ],
+    "V5": [
+      {
+        "epoch": 1,
+        "val_accuracy": 0.509,
+        "val_macro_f1": 0.45570738671178557,
+        "cumulative_train_seconds": 33.73628945834935,
+        "cumulative_stage_seconds": 49.49013249576092
+      },
+      {
+        "epoch": 2,
+        "val_accuracy": 0.546,
+        "val_macro_f1": 0.5055548482994037,
+        "cumulative_train_seconds": 66.76428603380919,
+        "cumulative_stage_seconds": 91.59587574005127
+      },
+      {
+        "epoch": 3,
+        "val_accuracy": 0.5365,
+        "val_macro_f1": 0.4962681753829631,
+        "cumulative_train_seconds": 99.75485834851861,
+        "cumulative_stage_seconds": 133.15182399190962
+      },
+      {
+        "epoch": 4,
+        "val_accuracy": 0.548,
+        "val_macro_f1": 0.5178129830289993,
+        "cumulative_train_seconds": 132.76658274047077,
+        "cumulative_stage_seconds": 175.73765503242612
+      },
+      {
+        "epoch": 5,
+        "val_accuracy": 0.5245,
+        "val_macro_f1": 0.4935406784617968,
+        "cumulative_train_seconds": 165.83779358118773,
+        "cumulative_stage_seconds": 217.9055554177612
+      },
+      {
+        "epoch": 6,
+        "val_accuracy": 0.5365,
+        "val_macro_f1": 0.5058489340647772,
+        "cumulative_train_seconds": 198.99815824069083,
+        "cumulative_stage_seconds": 260.57361221686006
+      },
+      {
+        "epoch": 7,
+        "val_accuracy": 0.53,
+        "val_macro_f1": 0.48693024984098665,
+        "cumulative_train_seconds": 232.20727848261595,
+        "cumulative_stage_seconds": 303.3130925539881
+      },
+      {
+        "epoch": 8,
+        "val_accuracy": 0.5305,
+        "val_macro_f1": 0.4939507102899414,
+        "cumulative_train_seconds": 265.33454475551844,
+        "cumulative_stage_seconds": 345.51380969397724
+      }
+    ],
+    "V6": [
+      {
+        "epoch": 1,
+        "val_accuracy": 0.5025,
+        "val_macro_f1": 0.4586780039043323,
+        "cumulative_train_seconds": 13.754778172820807,
+        "cumulative_stage_seconds": 27.867569759488106
+      },
+      {
+        "epoch": 2,
+        "val_accuracy": 0.5495,
+        "val_macro_f1": 0.5214600577384362,
+        "cumulative_train_seconds": 26.78450640104711,
+        "cumulative_stage_seconds": 47.548056749626994
+      },
+      {
+        "epoch": 3,
+        "val_accuracy": 0.5595,
+        "val_macro_f1": 0.533528467420579,
+        "cumulative_train_seconds": 39.45807249285281,
+        "cumulative_stage_seconds": 66.48357431031764
+      },
+      {
+        "epoch": 4,
+        "val_accuracy": 0.563,
+        "val_macro_f1": 0.5340142477718036,
+        "cumulative_train_seconds": 52.50271289981902,
+        "cumulative_stage_seconds": 86.0160068962723
+      },
+      {
+        "epoch": 5,
+        "val_accuracy": 0.5475,
+        "val_macro_f1": 0.510662435397616,
+        "cumulative_train_seconds": 65.19249797984958,
+        "cumulative_stage_seconds": 104.84116499684751
+      },
+      {
+        "epoch": 6,
+        "val_accuracy": 0.553,
+        "val_macro_f1": 0.5261300115801615,
+        "cumulative_train_seconds": 77.82361431792378,
+        "cumulative_stage_seconds": 123.64723432436585
+      },
+      {
+        "epoch": 7,
+        "val_accuracy": 0.56,
+        "val_macro_f1": 0.5219088671077475,
+        "cumulative_train_seconds": 90.66855179518461,
+        "cumulative_stage_seconds": 142.94821030832827
+      },
+      {
+        "epoch": 8,
+        "val_accuracy": 0.5625,
+        "val_macro_f1": 0.5415928485163813,
+        "cumulative_train_seconds": 103.62068145908415,
+        "cumulative_stage_seconds": 162.15633901581168
+      }
+    ]
+  },
+  "checks": {
+    "common_inputs_and_settings": true,
+    "same_v5_v6_source": true,
+    "completed_downstream_timing": true,
+    "selected_metrics_match_history": true
+  },
+  "source_file": "seed42.json",
+  "source_sha256": "4781e4105c45f6e83329fe63e6db6cb823ba528783a830e920a08ceff7c82f6b"
+}

@@ -1,5 +1,14 @@
 # 数据、错误对照与类中心图的复现
 
+新增[主实验报告](../reports/main_experiment.md)聚焦V4/V5/V6的5k下游适配。其四组图（最终效果与适配成本、效果—成本散点、效率分解、收敛曲线）直接读取已提交的聚合数据，无需原始数据、特征、checkpoint或GPU：
+
+```bash
+python -m pip install -r requirements-analysis.txt
+python tools/plot_main_experiment.py
+```
+
+输出到 `reports/figures/main_experiment/`，对应CSV/JSON在 `reports/data/main_experiment.*`。所有图仅计5k阶段，假设源模型已可用；脚本检查共同配置、数据、完整计时和选模一致性，不读取含源预训练的整体成本作为主指标。
+
 阅读图表只需打开[报告目录](../reports/README.md)。本次新增8组图，每组包含PNG和PDF：标签分布、原始样本、预处理对照、输入质量总览、分标签输入质量、错误重叠、错误案例、类中心相似度。
 
 ## 生成输入与核验

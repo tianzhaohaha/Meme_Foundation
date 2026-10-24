@@ -1,5 +1,7 @@
 # 六版本监督实验与Qwen零样本评估
 
+**聚焦Foundation模型的5k下游适配，请先读[Main experiment：V4/V5/V6](main_experiment.md)。** 新版主实验只计已有源模型后的下游成本。本页保留六版本完整记录、两种成本口径和补充分析，便于复核与追溯。
+
 另见并列的[数据集报告](dataset_review.md)（类别占比、原始样本与预处理对照）和[Binary/V4/V5/V6特征可视化报告](embedding_visualization.md)（PCA/t-SNE、类中心相似度）。本页开头展示输入质量，末尾展示同一validation上的模型错误对照。
 
 实验日期：2026-10-24，Asia/Singapore。原V1→V2→V3队列约16:23–17:09；V4随后独立补跑，V5→V6于19:38–19:47在相同GPU上串行补跑。原六个监督方案使用ViT-B/16 + RoBERTa-base、seed42、同一NVIDIA H200 NVL、batch16与FP32。依据为W&B live API和本地结果，七个训练run均为finished，关键summary与逐epoch指标已核对一致（允许浮点序列化舍入误差）。同日新增两个Qwen零样本validation评估run，结果单独列于后文；均未覆盖历史模型和结果。

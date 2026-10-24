@@ -1,8 +1,16 @@
-# TumEmo 图文情绪分类：六种训练策略与Qwen零样本评估
+# TumEmo 图文情绪分类：Foundation模型的5k下游适配
 
 **只看实验结果与分析，请直接打开[报告目录](reports/README.md)。** 所有报告、图表和支撑数据集中在 `reports/`，无需配置训练环境即可阅读。
 
-使用 **ViT-B/16 + RoBERTa-base**，对比直接训练、源二分类迁移和融合层消融六种方案。训练、准确率和效率指标统一记录到 W&B，支持SSH后台运行和checkpoint恢复。
+主实验使用 **ViT-B/16 + RoBERTa-base**，比较V4直接训练、V5复用源编码器后全参数适配、V6冻结源编码器后适配融合层与分类头。三组使用相同5,000条目标任务样本，关注已有Foundation源模型后的效果与适配成本。
+
+**[阅读Main experiment报告](reports/main_experiment.md)**：只计5k下游阶段，V6相对V4耗时由8.63分降至2.80分（减少67.57%），记录峰值allocated显存减少81.27%。Validation accuracy为56.30%对56.50%，test为54.75%对56.90%。这是低成本适配的质量—效率折中，Foundation模型预训练不计入此口径。
+
+![V4/V5/V6：下游效果、时间与显存](reports/figures/main_experiment/main_results.png)
+
+## 实现与补充实验
+
+仓库保留直接训练、源二分类迁移和融合层消融共六种方案。训练、准确率和效率指标统一记录到W&B，支持SSH后台运行和checkpoint恢复；完整历史记录可用于复核主实验。
 
 另在同一2,000条validation上完成Qwen3-VL-4B/8B-Instruct零样本七分类，accuracy分别为 **47.75% / 48.90%**，macro-F1为 **0.4538 / 0.4728**。原V1/V4在validation上为57.55%/56.50%；这些数字与下方test结果分开比较。详见[技术报告](reports/experiment_review.md#qwen零样本七分类同一2000条validation)和[VLM复现说明](docs/vlm_validation.md)。
 
@@ -32,13 +40,19 @@ cd Meme_Foundation
 python3.12 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements-analysis.txt
+python tools/plot_main_experiment.py
 python tools/plot_results.py
 python tools/plot_vlm_results.py
 ```
 
 完整训练使用下面的环境和数据准备步骤，或者直接按 [复现指南](docs/reproduction.md) 执行。报告中的历史数值来自已完成的seed42实验；读者重跑的输出写入新的运行目录，不会改写已提交的报告。
 
-## 已完成的实验
+## 已完成的实验与完整档案
+
+主实验V4/V5/V6的下游比较见[专门报告](reports/main_experiment.md)。下方展开项保留六版本原始整体成本统计，采用另一种计时口径。
+
+<details>
+<summary>六版本历史结果：包含源模型构建成本的完整方案比较</summary>
 
 seed42，NVIDIA H200 NVL，batch16，FP32；七个监督训练W&B run均已完成，云端summary与逐epoch曲线已和本地记录核对。
 
@@ -55,6 +69,9 @@ seed42，NVIDIA H200 NVL，batch16，FP32；七个监督训练W&B run均已完�
 
 ![准确率、耗时与收敛](reports/figures/comparison.png)
 
+</details>
+
+- [Main experiment：V4/V5/V6的5k下游效果与效率](reports/main_experiment.md)
 - [完整结果分析与W&B链接](reports/experiment_review.md)
 - [全部报告与图表导航](reports/README.md)
 - [Dataset-side：标签分布、原始样本与预处理](reports/dataset_review.md)
@@ -73,6 +90,7 @@ Meme_Foundation/
   embedding_analysis/       # Binary/V4/V5/V6特征提取和PCA/t-SNE可视化
   tests/                    # 小模型集成测试、后台队列测试
   tools/plot_results.py      # 从聚合结果重绘图表
+  tools/plot_main_experiment.py # V4/V5/V6下游主实验图与统计
   data/manifests/            # 20k/5k训练清单、验证/测试ID清单
   docs/                     # 实验协议、可重复运行说明
   reports/                  # 独立报告目录；从reports/README.md开始阅读
