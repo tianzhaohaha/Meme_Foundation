@@ -13,6 +13,7 @@ data/*
 !data/manifests/
 !data/manifests/**
 !data/README.md
+!data/dataset_signature.json
 *.zip
 *.tar
 *.tar.gz
@@ -25,11 +26,16 @@ runs*/
 background_comparison/
 background_v4/
 background_fusion/
+background_all/
 wandb/
 *.pt
 *.pth
 *.ckpt
 *.safetensors
+*.bin
+*.onnx
+*.pkl
+*.pickle
 *.log
 *.pid
 *.lock

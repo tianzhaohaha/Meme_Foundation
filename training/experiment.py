@@ -19,7 +19,7 @@ import torch
 from transformers import AutoTokenizer
 
 from experiment_data import fingerprint, prepare_experiment, stage_rows, write_json
-from model import TEXT_MODEL
+from model import TEXT_MODEL, TEXT_MODEL_REVISION
 from tracking import add_tracking_arguments
 from training_engine import run_stage, file_sha256
 
@@ -108,6 +108,7 @@ def execute_stage(stage, rows, tokenizer, resume_allowed):
             'max_length', 'encoder_lr', 'head_lr', 'dropout', 'weight_decay', 'warmup_ratio',
             'class_weight_power', 'label_smoothing', 'selection_metric', 'seed', 'target_accuracy', 'device')
     expected = {k: getattr(stage, k) for k in keys}
+    expected['text_model_revision'] = TEXT_MODEL_REVISION if stage.architecture == 'multimodal' else None
     expected['rows_sha256'] = fingerprint(rows)
     expected['init_checkpoint_sha256'] = file_sha256(stage.init_checkpoint) if stage.init_checkpoint else None
     identity = out / 'stage_identity.json'
@@ -116,6 +117,7 @@ def execute_stage(stage, rows, tokenizer, resume_allowed):
         # Old identities predate these ablations; their behavior is unchanged.
         recorded.setdefault('freeze_encoders', recorded['freeze_backbone'])
         recorded.setdefault('reset_fusion', False)
+        recorded.setdefault('text_model_revision', TEXT_MODEL_REVISION if recorded['architecture'] == 'multimodal' else None)
         if recorded != expected:
             raise ValueError(f'Experiment configuration changed in {out}; choose a new --output directory')
     if not identity.exists() and (out / 'last.pt').exists():
@@ -213,7 +215,7 @@ def main():
         if cohort_path.exists() and json.loads(cohort_path.read_text()) != cohort:
             raise ValueError('Comparison data/architecture/batch/evaluation settings changed; use a new --output directory')
         write_json(cohort_path, cohort)
-        tokenizer = AutoTokenizer.from_pretrained(TEXT_MODEL) if args.architecture == 'multimodal' else None
+        tokenizer = AutoTokenizer.from_pretrained(TEXT_MODEL, revision=TEXT_MODEL_REVISION) if args.architecture == 'multimodal' else None
         final = stage_arguments(args, dataset)
         final.output = args.output / args.variant
         final.data_preparation_seconds = preparation_seconds

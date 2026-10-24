@@ -12,7 +12,7 @@ from sklearn.metrics import f1_score, accuracy_score, classification_report, con
 from torch.utils.data import Dataset
 from torchvision import transforms
 from transformers import AutoTokenizer
-from model import TEXT_MODEL
+from model import TEXT_MODEL, TEXT_MODEL_REVISION
 from tracking import add_tracking_arguments
 from experiment_data import write_json as dump
 
@@ -121,7 +121,7 @@ def main():
     if args.resume and len(args.seeds)!=1: p.error('--resume requires exactly one seed')
     args.data=args.data.resolve();args.cache=args.cache.resolve();args.output=args.output.resolve()
     if not args.data.is_file():raise FileNotFoundError(args.data)
-    rows=prepare(args.data,args.cache);tokenizer=AutoTokenizer.from_pretrained(TEXT_MODEL)
+    rows=prepare(args.data,args.cache);tokenizer=AutoTokenizer.from_pretrained(TEXT_MODEL,revision=TEXT_MODEL_REVISION)
     results=[run(args,rows,tokenizer,s) for s in args.seeds]
     dump(args.output/'summary.json',{'results':results})
 if __name__=='__main__': main()

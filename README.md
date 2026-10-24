@@ -13,6 +13,26 @@
 
 本仓库保存源代码、固定样本清单、测试和已核验的聚合实验报告。数据ZIP、图片/文本、模型权重、环境缓存、运行日志和凭据均不在Git中。
 
+**数据获取说明：** 本次使用的 `subset_50000.zip` 暂无公开下载地址，需要向仓库维护者获取相同数据包。仅克隆本仓库即可阅读报告、检查代码和重绘已有结果；完整训练还需要数据包、预训练模型及GPU。本仓库不分发任何实验checkpoint，迁移实验所需的二分类源模型会在首次运行时自动训练。
+
+## 从 GitHub 开始
+
+```bash
+git clone https://github.com/tianzhaohaha/Meme_Foundation.git
+cd Meme_Foundation
+```
+
+只查看和重绘已发布结果，无需数据、GPU或W&B账号：
+
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements-analysis.txt
+python tools/plot_results.py
+```
+
+完整训练使用下面的环境和数据准备步骤，或者直接按 [复现指南](docs/reproduction.md) 执行。报告中的历史数值来自已完成的seed42实验；读者重跑的输出写入新的运行目录，不会改写已提交的报告。
+
 ## 已完成的实验
 
 seed42，NVIDIA H200 NVL，batch16，FP32；七个W&B run均已完成，云端summary与逐epoch曲线已和本地记录核对。
@@ -38,8 +58,8 @@ seed42，NVIDIA H200 NVL，batch16，FP32；七个W&B run均已完成，云端su
 ## 目录
 
 ```text
-tumemo-training/
-  training/                 # 六个版本启动器、V1→V2→V3与V5→V6后台队列
+Meme_Foundation/
+  training/                 # 六个版本启动器，以及baseline/fusion/all后台队列
   tests/                    # 小模型集成测试、后台队列测试
   tools/plot_results.py      # 从聚合结果重绘图表
   data/manifests/            # 20k/5k训练清单、验证/测试ID清单
@@ -48,6 +68,8 @@ tumemo-training/
   requirements.txt          # 训练依赖；PyTorch单独安装
   requirements-analysis.txt # 可选绘图依赖
   requirements-reproduction.txt # 本次历史实验的PyTorch版本
+  requirements-lock-cu128.txt # Linux / Python 3.12历史依赖版本锁定
+  tools/verify_data.py        # 验证数据包及不依赖机器路径的数据指纹
 ```
 
 ## 创建环境
@@ -70,7 +92,7 @@ PyTorch和torchvision须匹配，CUDA wheel还需要相容的驱动；请结合�
 如必须在独立环境中重建历史版本，可使用：
 
 ```bash
-python -m pip install -r requirements-reproduction.txt
+python -m pip install -r requirements-lock-cu128.txt
 ```
 
 历史PyTorch 2.8在已知反序列化漏洞影响范围内；只加载可信来源的本地权重，受限加载不代表任意未知checkpoint安全。修复版本和边界见[官方公告](https://github.com/pytorch/pytorch/security/advisories/GHSA-63cw-57p8-fm3p)。新训练checkpoint采用受限加载兼容格式；旧可信pickle格式才需要显式 `--trust-legacy-checkpoint`。
@@ -89,9 +111,12 @@ subset_50000/all_data/<id>.txt
 
 ```bash
 bash training/run_v1_direct.sh --prepare-only
+python tools/verify_data.py --data data/subset_50000.zip
 ```
 
-首次正式训练会下载ImageNet ViT权重及 `FacebookAI/roberta-base` 权重/分词器。启动脚本默认把缓存放在仓库 `.cache/`；已有缓存可通过 `HF_HOME`、`TORCH_HOME` 指定。联网预先缓存后可设置 `HF_HUB_OFFLINE=1` 使用本地Hugging Face模型。
+校验脚本检查原始ZIP的SHA-256，以及29,000条准备后记录的ID、顺序、标签、图片哈希和清洗后文本指纹。记录中的绝对路径不参与该校验；不同机器可以得到相同的可移植数据指纹。参考值在 `data/dataset_signature.json`。
+
+首次正式训练会下载ImageNet ViT权重及 `FacebookAI/roberta-base` 权重/分词器。RoBERTa固定到本机实验缓存记录的revision `e2da8e2f811d1448a5b465c236feacd80ffbac7b`，避免上游main变化。启动脚本默认把缓存放在仓库 `.cache/`；已有缓存可通过 `HF_HOME`、`TORCH_HOME` 指定。联网预先缓存后可设置 `HF_HUB_OFFLINE=1` 使用本地Hugging Face模型。
 
 ## W&B 登录与训练
 
@@ -104,13 +129,22 @@ export WANDB_RUN_GROUP=three-strategies-seed42
 # 如使用团队空间：export WANDB_ENTITY=你的团队名
 ```
 
-SSH场景推荐一次性后台启动三个实验：
+SSH场景完整复现六个实验：
 
 ```bash
-bash training/run_all_nohup.sh
+bash training/run_all_nohup.sh --suite all
+bash training/run_all_nohup.sh status --suite all
+tail -f training/background_all/queue.log
+# 停止后，用同样的配置恢复
+bash training/run_all_nohup.sh stop --suite all
+bash training/run_all_nohup.sh --suite all -- --resume
 ```
 
-总脚本使用 `nohup + setsid`，按V1 → V2 → V3串行运行，默认GPU 0，避免三版争用GPU造成计时失真。V2完成二分类预训练后，V3复用同一个源checkpoint；失败或正常停止后不会启动下一个版本。
+`--suite all`按V1→V2→V3→V4→V5→V6串行执行，只训练一次共享源二分类模型。没有W&B账号时可在启动命令前加 `WANDB_MODE=offline`，仍保存本地全部指标；离线日志模式的耗时不应要求与原在线模式完全一致。
+
+不指定 `--suite` 时保留原V1→V2→V3队列；下面的status/stop示例对应这个默认队列，运行all套件时应加 `--suite all`。
+
+总脚本使用 `nohup + setsid`，默认GPU 0，各版本串行运行，避免争用GPU造成计时失真。迁移版本复用同一个源checkpoint；失败或正常停止后不会启动下一个版本。
 
 ```bash
 # 状态与日志
@@ -147,7 +181,7 @@ echo $! > training/background_v4/worker.pid
 tail -f training/background_v4/train.log
 ```
 
-V4写入 `training/runs_comparison/direct_5k/seed_42/`，不会覆盖V1。需要停止时运行 `touch training/background_v4/STOP`，等待当前轮保存；恢复前移除该STOP文件，并在相同启动命令中添加 `--resume`。原总脚本仍只运行V1→V2→V3。为使计时可比，请在前三版队列结束后再启动V4。
+V4写入 `training/runs_comparison/direct_5k/seed_42/`，不会覆盖V1。需要停止时运行 `touch training/background_v4/STOP`，等待当前轮保存；恢复前移除该STOP文件，并在相同启动命令中添加 `--resume`。使用 `--suite all` 时已包含V4，无需单独启动。为使计时可比，请避免同时运行多个队列。
 
 V4仅将5,000条目标样本用于梯度更新。预处理仍读取20k/5k清单以复用原来的验证/测试划分，不会将20k样本加入V4训练。它没有第二阶段，因此 `comparison/stage2_*`为空；与V2/V3第二阶段比较时使用V4自身的 `efficiency/*`，完整方案比较使用共同的 `comparison/total_*`。
 
@@ -222,16 +256,10 @@ python -m pip install -r requirements-analysis.txt
 python tools/plot_results.py
 ```
 
-旧的单独二分类入口 `training/run_train.sh ZIP`仍保留，它使用原20k内部训练/验证划分，与六版本实验不同，不应混合比较。新实验请使用各版本脚本；run_all_nohup默认覆盖原V1→V2→V3，run_fusion_nohup覆盖V5→V6。
+旧的单独二分类入口 `training/run_train.sh ZIP`仍保留，它使用原20k内部训练/验证划分，与六版本实验不同，不应混合比较。完整复现请使用 `run_all_nohup.sh --suite all`；不指定suite时仅运行V1→V2→V3，`run_fusion_nohup.sh`仅运行V5→V6。
 
-## 本地Git与后续上传
+## 发布范围
 
-仓库使用 `main` 分支。`.gitignore`排除原始数据、checkpoint、运行输出、缓存和凭据，只跟踪代码、样本ID/标签清单及聚合报告。分享仓库时请确认数据清单与报告的分享权限，并选择适用的代码许可证。
+仓库只跟踪代码、依赖版本、样本ID/标签清单、数据指纹、测试及技术报告。checkpoint索引是历史文件的元数据，不代表GitHub提供了对应权重；重新训练后会生成自己的checkpoint。
 
-创建自己的空GitHub仓库后，可在本目录连接并推送：
-
-```bash
-git status
-git remote add origin <你的GitHub仓库URL>
-git push -u origin main
-```
+数据包目前需向仓库维护者获取。预训练模型由训练代码从其官方来源下载，数据和预训练模型遵循各自使用条件。本仓库暂未附通用开源许可证。

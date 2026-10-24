@@ -17,7 +17,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from experiment_data import EMOTIONS, fingerprint
-from model import EmotionModel, TEXT_MODEL, IMAGE_MODEL, IMAGE_WEIGHTS
+from model import EmotionModel, TEXT_MODEL, TEXT_MODEL_REVISION, IMAGE_MODEL, IMAGE_WEIGHTS
 from tracking import Tracker
 
 
@@ -87,7 +87,8 @@ def build_config(args, rows, seed):
                   selection_metric=getattr(args, 'selection_metric', 'macro_f1'),
                   manifest_sha256=fingerprint(rows), optimizer='Adam', precision='fp32',
                   image_model=IMAGE_MODEL, image_weights=IMAGE_WEIGHTS,
-                  text_model=TEXT_MODEL if getattr(args, 'architecture', 'multimodal') == 'multimodal' else None)
+                  text_model=TEXT_MODEL if getattr(args, 'architecture', 'multimodal') == 'multimodal' else None,
+                  text_model_revision=TEXT_MODEL_REVISION if getattr(args, 'architecture', 'multimodal') == 'multimodal' else None)
     config['labels'] = EMOTIONS if config['num_classes'] == 7 else ['negative', 'positive']
     return config
 
@@ -99,7 +100,7 @@ def validate_resume(saved, config):
     for key in keys:
         if saved[key] != config[key]:
             raise ValueError(f'Resume configuration mismatch: {key}')
-    for key in ('architecture', 'num_classes', 'freeze_backbone', 'selection_metric', 'patience', 'init_checkpoint_sha256'):
+    for key in ('architecture', 'num_classes', 'freeze_backbone', 'selection_metric', 'patience', 'init_checkpoint_sha256', 'text_model_revision'):
         if key in saved:
             old = saved[key]
             if key == 'architecture' and old.startswith('ViT-B/16 + RoBERTa'):

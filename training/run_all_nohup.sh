@@ -8,9 +8,9 @@ SCRIPT_PATH="$SCRIPT_DIR/run_all_nohup.sh"
 usage() {
   cat <<'HELP'
 Usage:
-  bash run_all_nohup.sh [start] [--suite baseline|fusion] [--log-dir DIR] [--] [experiment options]
-  bash run_all_nohup.sh status [--suite baseline|fusion] [--log-dir DIR]
-  bash run_all_nohup.sh stop [--suite baseline|fusion] [--log-dir DIR]
+  bash run_all_nohup.sh [start] [--suite baseline|fusion|all] [--log-dir DIR] [--] [experiment options]
+  bash run_all_nohup.sh status [--suite baseline|fusion|all] [--log-dir DIR]
+  bash run_all_nohup.sh stop [--suite baseline|fusion|all] [--log-dir DIR]
 
 Examples:
   bash run_all_nohup.sh
@@ -19,6 +19,7 @@ Examples:
   bash run_all_nohup.sh --log-dir /path/to/logs -- --output /path/to/results
 
 Default suite runs v1 -> v2 -> v3; fusion suite runs v5 -> v6.
+The all suite runs v1 -> v2 -> v3 -> v4 -> v5 -> v6 for a fresh reproduction.
 Runs sequentially with nohup + setsid. Stops on any failure or
 graceful training stop. Reconnect using 'status' and tail the printed log paths.
 Use the same options and --resume to continue an interrupted queue.
@@ -59,6 +60,7 @@ if [[ "${1:-}" == --worker ]]; then
   case "$SUITE" in
     baseline) scripts=(run_v1_direct.sh run_v2_finetune.sh run_v3_frozen.sh) ;;
     fusion) scripts=(run_v5_reset_fusion.sh run_v6_tune_fusion.sh) ;;
+    all) scripts=(run_v1_direct.sh run_v2_finetune.sh run_v3_frozen.sh run_v4_direct_5k.sh run_v5_reset_fusion.sh run_v6_tune_fusion.sh) ;;
     *) echo "Unknown suite: $SUITE" >&2; exit 2 ;;
   esac
   for script in "${scripts[@]}"; do
@@ -117,6 +119,7 @@ done
 case "$SUITE" in
   baseline) LOG_DIR="${LOG_DIR:-$SCRIPT_DIR/background_comparison}" ;;
   fusion) LOG_DIR="${LOG_DIR:-$SCRIPT_DIR/background_fusion}" ;;
+  all) LOG_DIR="${LOG_DIR:-$SCRIPT_DIR/background_all}" ;;
   *) echo "Unknown suite: $SUITE" >&2; exit 2 ;;
 esac
 mkdir -p -- "$LOG_DIR"

@@ -23,7 +23,7 @@ class BackgroundQueueTest(unittest.TestCase):
         self.events = self.root / 'events'
         self.env = {**os.environ, 'QUEUE_TEST_DIR': str(self.root)}
         for index, name in ((1, 'run_v1_direct.sh'), (2, 'run_v2_finetune.sh'), (3, 'run_v3_frozen.sh'),
-                            (5, 'run_v5_reset_fusion.sh'), (6, 'run_v6_tune_fusion.sh')):
+                            (4, 'run_v4_direct_5k.sh'), (5, 'run_v5_reset_fusion.sh'), (6, 'run_v6_tune_fusion.sh')):
             (self.root / name).write_text(f'''#!/usr/bin/env bash
 set -euo pipefail
 printf 'start {index}\\n' >> "$QUEUE_TEST_DIR/events"
@@ -83,6 +83,15 @@ printf 'end {index}\\n' >> "$QUEUE_TEST_DIR/events"
         self.wait_for(lambda: self.state() == 'completed')
         self.assertEqual(self.events.read_text().splitlines(), ['start 5', 'end 5', 'start 6', 'end 6'])
         self.assertEqual((self.logs / 'queue.log').read_text().count('Command:'), 2)
+
+    def test_all_suite_runs_six_versions_in_order(self):
+        result = subprocess.run(['bash', str(self.script), '--suite', 'all', '--log-dir', str(self.logs),
+                                 '--', '--seed', '42'], env=self.env, capture_output=True, text=True, timeout=10)
+        self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+        self.wait_for(lambda: self.state() == 'completed')
+        self.assertEqual(self.events.read_text().splitlines(),
+                         [event for i in range(1, 7) for event in (f'start {i}', f'end {i}')])
+        self.assertEqual((self.logs / 'queue.log').read_text().count('Command:'), 6)
 
     def test_hangup_lock_and_graceful_stop(self):
         (self.root / 'block').touch()

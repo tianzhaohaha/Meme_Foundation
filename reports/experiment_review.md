@@ -111,4 +111,4 @@ V3从未预测Angry，把84.1%的样本预测成Happy或Bored，说明accuracy�
 - 当前只有seed42，未做多seed显著性检验，也没有保存逐样本预测供配对检验。V4是在已查看前三版测试结果后提出的补充基线，但其训练超参数保持原值；如继续根据这些结果优化方案，应使用新的独立最终评估。
 - 源/目标清单仍共有227个图片哈希；验证/测试已排除精确图片和规范化非空文本重复，但没有完整近重复或跨用户审计。
 
-所有21个checkpoint的对应关系见[文件索引](checkpoints.md)。完整指标见[聚合JSON](data/seed42.json)和[CSV](comparison.csv)，图表用 `python tools/plot_results.py` 重绘。交付目录中的checkpoint是独立副本，原始训练文件保留。
+所有21个checkpoint的历史对应关系见[文件索引](checkpoints.md)。完整指标见[聚合JSON](data/seed42.json)和[CSV](comparison.csv)，图表用 `python tools/plot_results.py` 重绘。GitHub仅发布代码和分析材料，不包含checkpoint或原始数据；获取相同数据后可按[复现指南](../docs/reproduction.md)重新训练。

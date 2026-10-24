@@ -9,6 +9,7 @@ from transformers import AutoModel
 IMAGE_MODEL = 'vit_b_16'
 IMAGE_WEIGHTS = 'IMAGENET1K_V1'
 TEXT_MODEL = 'FacebookAI/roberta-base'
+TEXT_MODEL_REVISION = 'e2da8e2f811d1448a5b465c236feacd80ffbac7b'
 class EmotionModel(nn.Module):
     def __init__(self, pretrained=True, dropout=0.5, num_classes=2, architecture='multimodal'):
         super().__init__()
@@ -22,7 +23,7 @@ class EmotionModel(nn.Module):
         if architecture == 'vit':
             self.text_encoder = None
         elif pretrained:
-            self.text_encoder = AutoModel.from_pretrained(TEXT_MODEL, add_pooling_layer=False)
+            self.text_encoder = AutoModel.from_pretrained(TEXT_MODEL, revision=TEXT_MODEL_REVISION, add_pooling_layer=False)
         else:
             from transformers import RobertaConfig, RobertaModel
             self.text_encoder = RobertaModel(RobertaConfig(), add_pooling_layer=False)

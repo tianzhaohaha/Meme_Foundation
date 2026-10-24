@@ -1,6 +1,6 @@
 # Checkpoint 对应关系
 
-以下21个文件均已读取实际checkpoint元数据核对。路径相对于**原项目的 `TumEmo_Binary_Training_Handoff/` 目录**；这些大文件保留在原目录，不包含在可上传Git仓库中。新仓库未来训练默认写入 `training/runs_comparison/`。
+以下21个文件均已读取实际checkpoint元数据核对。路径相对于**作者原项目的 `TumEmo_Binary_Training_Handoff/` 目录**；本页是历史结果的文件索引，GitHub仓库不提供这些权重。按复现指南重新训练后，自己的checkpoint默认写入 `training/runs_comparison/`。
 
 ## 六个最终七分类模型
 
@@ -45,7 +45,7 @@ V2、V3、V5、V6的配置记录了相同来源哈希，源文件已重新计算
 
 ## 文件内容与恢复
 
-本次七个阶段中，原训练目录内每一对 `best.pt` / `best_accuracy.pt` 都指向同一inode，是同一份内容的硬链接。交付目录按要求为所有21个文件分别创建了独立副本。`last.pt`为不同epoch的另一份文件。以后若按macro-F1与accuracy选到不同轮次，两个best文件可以不同。
+本次七个阶段中，原训练目录内每一对 `best.pt` / `best_accuracy.pt` 都指向同一inode，是同一份内容的硬链接。`last.pt`为不同epoch的另一份文件。以后若按macro-F1与accuracy选到不同轮次，两个best文件可以不同。
 
 - V1/V2/V4/V5完整checkpoint约2.35 GiB，包含全模型及Adam状态。
 - V6完整checkpoint约0.79 GiB，包含完整模型及融合层/分类头的Adam状态。
@@ -53,7 +53,7 @@ V2、V3、V5、V6的配置记录了相同来源哈希，源文件已重新计算
 - `best.pt`用于报告中的测试结果与后续评估；`last.pt`用于原目录下继续训练。
 - `runs_binary/seed_42/*.pt`是更早的旧二分类实验，划分不同；`runs_smoke/seed_42/*.pt`是冒烟测试，均不是本次六版最终结果。
 
-加载七分类权重示例（从新仓库根目录执行，`checkpoint_path`指向原始实际文件）：
+加载七分类权重示例（从仓库根目录执行，`checkpoint_path`指向自行训练得到的可信本地文件）：
 
 ```python
 import sys

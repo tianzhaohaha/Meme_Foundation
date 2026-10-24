@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "archive": {
+    "filename": "subset_50000.zip",
+    "bytes": 4295027951,
+    "sha256": "f42c5b03c1f0ab6cab9146f6f575a82add381ae3bc4f46cbeee40b75fb5a6c20"
+  },
+  "counts": {
+    "source": 20000,
+    "target": 5000,
+    "validation": 2000,
+    "test": 2000
+  },
+  "records_sha256": "1e72086e189b6b6cb81642802871af90701c1efd5a4d0568e49355f16310f77b",
+  "fingerprint_definition": "SHA256 of ordered records containing id/emotion/label/binary_label/split/image_sha256/text_sha256, JSON sort_keys=True and compact separators; machine image paths excluded",
+  "availability": "Not distributed in this repository. Request the original data package from the repository maintainer."
+}

@@ -63,7 +63,9 @@ def main():
     for ax in axes.flat:
         ax.grid(axis='y', alpha=.18)
         ax.set_axisbelow(True)
-    fig.suptitle('TumEmo | ViT + RoBERTa | seed 42 | NVIDIA H200 NVL', fontsize=14)
+    config = runs[variants[0]]['config']
+    architecture = 'ViT + RoBERTa' if config['architecture'] == 'multimodal' else 'ViT'
+    fig.suptitle(f"TumEmo | {architecture} | seed {config['seed']} | {config['gpu_name']}", fontsize=14)
     fig.savefig(args.output / 'comparison.png', dpi=180)
     fig.savefig(args.output / 'comparison.pdf')
     plt.close(fig)
