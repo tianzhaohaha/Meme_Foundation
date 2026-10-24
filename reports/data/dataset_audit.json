@@ -1,0 +1,55 @@
+{
+  "counts": {
+    "source": 20000,
+    "target": 5000,
+    "validation": 2000,
+    "test": 2000
+  },
+  "class_counts": {
+    "source": {
+      "Angry": 1505,
+      "Bored": 3298,
+      "Calm": 1828,
+      "Fear": 2050,
+      "Happy": 5160,
+      "Love": 3533,
+      "Sad": 2626
+    },
+    "target": {
+      "Angry": 376,
+      "Bored": 825,
+      "Calm": 457,
+      "Fear": 513,
+      "Happy": 1290,
+      "Love": 883,
+      "Sad": 656
+    },
+    "validation": {
+      "Bored": 356,
+      "Happy": 557,
+      "Sad": 223,
+      "Fear": 215,
+      "Love": 346,
+      "Calm": 187,
+      "Angry": 116
+    },
+    "test": {
+      "Bored": 357,
+      "Fear": 215,
+      "Angry": 116,
+      "Happy": 557,
+      "Sad": 222,
+      "Calm": 187,
+      "Love": 346
+    }
+  },
+  "source_target_shared_image_hashes": 227,
+  "empty_text_counts": {
+    "source": 264,
+    "target": 67,
+    "validation": 26,
+    "test": 27
+  },
+  "unique_heldout_candidates": 20382,
+  "scope": "Validation/test are disjoint from all training by ID, exact image bytes, and normalized nonempty text, and from each other. Text normalization is cleaning, casefold and whitespace normalization. Training duplicates are retained to preserve the specified lists. No near-duplicate guarantee."
+}

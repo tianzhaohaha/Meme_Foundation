@@ -1,0 +1,50 @@
+# Environments and caches
+.venv/
+venv/
+.cache/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Data: publish ID/label manifests only, not images/texts or dataset archives
+data/*
+!data/manifests/
+!data/manifests/**
+!data/README.md
+*.zip
+*.tar
+*.tar.gz
+*.jpg
+*.jpeg
+
+# Runtime outputs and checkpoints
+prepared*/
+runs*/
+background_comparison/
+wandb/
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.log
+*.pid
+*.lock
+STOP
+
+# Credentials and machine-specific settings
+.env
+.env.*
+!.env.example
+.netrc
+netrc
+credentials*
+*.pem
+*.key
+.aws/
+.codex/
+.agents/
+.DS_Store
+
+# Selected aggregate reports under reports/ are intentionally tracked.

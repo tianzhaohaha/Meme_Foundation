@@ -1,0 +1,13 @@
+path,name,epoch,variant,stage,num_classes,selection_metric,validation_accuracy,validation_macro_f1,bytes,source_sha256,size_gib,same_file_as_best
+runs_comparison/direct/seed_42/best.pt,best.pt,2,direct,direct,7,accuracy,0.5755,0.5546822995531795,2523432528,,2.3501296788454056,True
+runs_comparison/direct/seed_42/best_accuracy.pt,best_accuracy.pt,2,direct,direct,7,accuracy,0.5755,0.5546822995531795,2523432528,,2.3501296788454056,True
+runs_comparison/direct/seed_42/last.pt,last.pt,6,direct,direct,7,accuracy,0.5025,0.46339289615695867,2523434128,,2.350131168961525,False
+runs_comparison/frozen/seed_42/best.pt,best.pt,18,frozen,stage2,7,accuracy,0.4165,0.2608014512084988,841163435,a098806de821c9d0fde3d90399fa5ef4de06fff4b9c774de6495a97b0d18ee53,0.7833944959565997,True
+runs_comparison/frozen/seed_42/best_accuracy.pt,best_accuracy.pt,18,frozen,stage2,7,accuracy,0.4165,0.2608014512084988,841163435,a098806de821c9d0fde3d90399fa5ef4de06fff4b9c774de6495a97b0d18ee53,0.7833944959565997,True
+runs_comparison/frozen/seed_42/last.pt,last.pt,20,frozen,stage2,7,accuracy,0.4165,0.26078926292186055,841164267,a098806de821c9d0fde3d90399fa5ef4de06fff4b9c774de6495a97b0d18ee53,0.7833952708169818,False
+runs_comparison/full/seed_42/best.pt,best.pt,2,full,stage2,7,accuracy,0.5465,0.5127791161735923,2523433168,a098806de821c9d0fde3d90399fa5ef4de06fff4b9c774de6495a97b0d18ee53,2.3501302748918533,True
+runs_comparison/full/seed_42/best_accuracy.pt,best_accuracy.pt,2,full,stage2,7,accuracy,0.5465,0.5127791161735923,2523433168,a098806de821c9d0fde3d90399fa5ef4de06fff4b9c774de6495a97b0d18ee53,2.3501302748918533,True
+runs_comparison/full/seed_42/last.pt,last.pt,6,full,stage2,7,accuracy,0.535,0.5004631463834254,2523434768,a098806de821c9d0fde3d90399fa5ef4de06fff4b9c774de6495a97b0d18ee53,2.3501317650079727,False
+runs_comparison/shared_binary/e1555ba804919d21/seed_42/best.pt,best.pt,3,shared_binary,binary,2,macro_f1,0.8175,0.8169563144931232,2523416720,,2.350114956498146,True
+runs_comparison/shared_binary/e1555ba804919d21/seed_42/best_accuracy.pt,best_accuracy.pt,3,shared_binary,binary,2,macro_f1,0.8175,0.8169563144931232,2523416720,,2.350114956498146,True
+runs_comparison/shared_binary/e1555ba804919d21/seed_42/last.pt,last.pt,7,shared_binary,binary,2,macro_f1,0.7955,0.7932421526171171,2523418064,,2.3501162081956863,False
