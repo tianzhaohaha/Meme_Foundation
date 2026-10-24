@@ -14,3 +14,9 @@ runs_comparison/shared_binary/e1555ba804919d21/seed_42/last.pt,last.pt,7,shared_
 runs_comparison/direct_5k/seed_42/best.pt,best.pt,8,direct_5k,direct,7,accuracy,0.565,0.5423889004298481,2523434896,,2.3501318842172623,True
 runs_comparison/direct_5k/seed_42/best_accuracy.pt,best_accuracy.pt,8,direct_5k,direct,7,accuracy,0.565,0.5423889004298481,2523434896,,2.3501318842172623,True
 runs_comparison/direct_5k/seed_42/last.pt,last.pt,12,direct_5k,direct,7,accuracy,0.55,0.5268964927419263,2523436496,,2.3501333743333817,False
+runs_comparison/reset_fusion/seed_42/best.pt,best.pt,4,reset_fusion,stage2,7,accuracy,0.548,0.5178129830289993,2523434320,a098806de821c9d0fde3d90399fa5ef4de06fff4b9c774de6495a97b0d18ee53,2.3501313477754593,True
+runs_comparison/reset_fusion/seed_42/best_accuracy.pt,best_accuracy.pt,4,reset_fusion,stage2,7,accuracy,0.548,0.5178129830289993,2523434320,a098806de821c9d0fde3d90399fa5ef4de06fff4b9c774de6495a97b0d18ee53,2.3501313477754593,True
+runs_comparison/reset_fusion/seed_42/last.pt,last.pt,8,reset_fusion,stage2,7,accuracy,0.5305,0.4939507102899414,2523435920,a098806de821c9d0fde3d90399fa5ef4de06fff4b9c774de6495a97b0d18ee53,2.3501328378915787,False
+runs_comparison/tune_fusion/seed_42/best.pt,best.pt,4,tune_fusion,stage2,7,accuracy,0.563,0.5340142477718036,844313107,a098806de821c9d0fde3d90399fa5ef4de06fff4b9c774de6495a97b0d18ee53,0.786327856592834,True
+runs_comparison/tune_fusion/seed_42/best_accuracy.pt,best_accuracy.pt,4,tune_fusion,stage2,7,accuracy,0.563,0.5340142477718036,844313107,a098806de821c9d0fde3d90399fa5ef4de06fff4b9c774de6495a97b0d18ee53,0.786327856592834,True
+runs_comparison/tune_fusion/seed_42/last.pt,last.pt,8,tune_fusion,stage2,7,accuracy,0.5625,0.5415928485163813,844314707,a098806de821c9d0fde3d90399fa5ef4de06fff4b9c774de6495a97b0d18ee53,0.7863293467089534,False

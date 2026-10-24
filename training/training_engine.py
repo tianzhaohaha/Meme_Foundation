@@ -67,10 +67,12 @@ def repair_best_checkpoints(saved, last_path, out):
         raise FileNotFoundError('Keep the selected best.pt with last.pt in the original output directory')
 
 
-def transfer_backbone(model, checkpoint):
-    source = {k: v for k, v in checkpoint['model_state_dict'].items() if not k.startswith('head.')}
+def transfer_backbone(model, checkpoint, reset_fusion=False):
+    excluded = ('head.', 'fusion.') if reset_fusion else ('head.',)
+    source = {k: v for k, v in checkpoint['model_state_dict'].items() if not k.startswith(excluded)}
     missing, unexpected = model.load_state_dict(source, strict=False)
-    if unexpected or set(missing) != {'head.1.weight', 'head.1.bias'}:
+    expected_missing = {k for k in model.state_dict() if k.startswith(excluded)}
+    if unexpected or set(missing) != expected_missing:
         raise ValueError(f'Incompatible pretrained backbone: missing={missing}, unexpected={unexpected}')
 
 
@@ -79,6 +81,8 @@ def build_config(args, rows, seed):
     config.update(seed=seed, architecture=getattr(args, 'architecture', 'multimodal'),
                   num_classes=getattr(args, 'num_classes', 2),
                   freeze_backbone=getattr(args, 'freeze_backbone', False),
+                  freeze_encoders=getattr(args, 'freeze_encoders', getattr(args, 'freeze_backbone', False)),
+                  reset_fusion=getattr(args, 'reset_fusion', False),
                   stage=getattr(args, 'stage', 'binary'), variant=getattr(args, 'variant', 'legacy_binary'),
                   selection_metric=getattr(args, 'selection_metric', 'macro_f1'),
                   manifest_sha256=fingerprint(rows), optimizer='Adam', precision='fp32',
@@ -102,6 +106,9 @@ def validate_resume(saved, config):
                 old = 'multimodal'
             if old != config.get(key):
                 raise ValueError(f'Resume configuration mismatch: {key}')
+    for key, default in (('reset_fusion', False), ('freeze_encoders', saved.get('freeze_backbone', False))):
+        if saved.get(key, default) != config[key]:
+            raise ValueError(f'Resume configuration mismatch: {key}')
 
 
 def run_stage(args, rows, tokenizer, seed):
@@ -137,10 +144,12 @@ def run_stage(args, rows, tokenizer, seed):
     config['init_checkpoint_sha256'] = file_sha256(init) if init else None
     if init:
         checkpoint = load_checkpoint(init, trust_legacy)
-        transfer_backbone(model, checkpoint)
+        transfer_backbone(model, checkpoint, reset_fusion=config['reset_fusion'])
         del checkpoint
     if config['freeze_backbone']:
         model.freeze_backbone()
+    elif config['freeze_encoders']:
+        model.freeze_backbone(train_fusion=True)
     model.to(device)
     head_parameters = [p for n, p in model.named_parameters() if p.requires_grad and (n.startswith('head.') or n.startswith('fusion.'))]
     encoder_parameters = [p for n, p in model.named_parameters() if p.requires_grad and not (n.startswith('head.') or n.startswith('fusion.'))]

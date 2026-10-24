@@ -1,8 +1,8 @@
 # Checkpoint 对应关系
 
-以下15个文件均已读取实际checkpoint元数据核对。路径相对于**原项目的 `TumEmo_Binary_Training_Handoff/` 目录**；这些大文件保留在原目录，不包含在可上传Git仓库中。新仓库未来训练默认写入 `training/runs_comparison/`。
+以下21个文件均已读取实际checkpoint元数据核对。路径相对于**原项目的 `TumEmo_Binary_Training_Handoff/` 目录**；这些大文件保留在原目录，不包含在可上传Git仓库中。新仓库未来训练默认写入 `training/runs_comparison/`。
 
-## 四个最终七分类模型
+## 六个最终七分类模型
 
 | 用途 | 文件相对路径 | epoch | 验证accuracy | 该最佳模型测试accuracy |
 |---|---|---:|---:|---:|
@@ -18,14 +18,20 @@
 | V4推荐评估/推理 | `runs_comparison/direct_5k/seed_42/best.pt` | 8 | 56.50% | 56.90% |
 | V4按accuracy选出的副本名称 | `runs_comparison/direct_5k/seed_42/best_accuracy.pt` | 8 | 56.50% | 56.90% |
 | V4断点恢复 | `runs_comparison/direct_5k/seed_42/last.pt` | 12 | 55.00% | 未单独测试 |
+| V5推荐评估/推理 | `runs_comparison/reset_fusion/seed_42/best.pt` | 4 | 54.80% | 54.85% |
+| V5按accuracy选择 | `runs_comparison/reset_fusion/seed_42/best_accuracy.pt` | 4 | 54.80% | 54.85% |
+| V5断点恢复 | `runs_comparison/reset_fusion/seed_42/last.pt` | 8 | 53.05% | 未单独测试 |
+| V6推荐评估/推理 | `runs_comparison/tune_fusion/seed_42/best.pt` | 4 | 56.30% | 54.75% |
+| V6按accuracy选择 | `runs_comparison/tune_fusion/seed_42/best_accuracy.pt` | 4 | 56.30% | 54.75% |
+| V6断点恢复 | `runs_comparison/tune_fusion/seed_42/last.pt` | 8 | 56.25% | 未单独测试 |
 
 V3第20轮验证accuracy与第18轮持平，但模型参数和macro-F1不同；最终42.10%的测试结果对应第18轮 `best.pt`，不能无验证地归到 `last.pt`。
 
-## V2/V3共享的二分类源模型
+## V2/V3/V5/V6共享的二分类源模型
 
 | 用途 | 文件相对路径 | epoch | 验证accuracy / macro-F1 |
 |---|---|---:|---|
-| 两个第二阶段实际加载的源模型 | `runs_comparison/shared_binary/e1555ba804919d21/seed_42/best.pt` | 3 | 81.75% / 0.816956 |
+| 四个第二阶段实际加载的源模型 | `runs_comparison/shared_binary/e1555ba804919d21/seed_42/best.pt` | 3 | 81.75% / 0.816956 |
 | 按accuracy选出的源模型 | `runs_comparison/shared_binary/e1555ba804919d21/seed_42/best_accuracy.pt` | 3 | 81.75% / 0.816956 |
 | 二分类阶段断点恢复 | `runs_comparison/shared_binary/e1555ba804919d21/seed_42/last.pt` | 7 | 79.55% / 0.793242 |
 
@@ -35,16 +41,17 @@ V3第20轮验证accuracy与第18轮持平，但模型参数和macro-F1不同；�
 a098806de821c9d0fde3d90399fa5ef4de06fff4b9c774de6495a97b0d18ee53
 ```
 
-V2、V3的配置记录了相同来源哈希，源文件已重新计算哈希核对。二分类模型只有2个输出，不能直接当作七分类最终模型使用。
+V2、V3、V5、V6的配置记录了相同来源哈希，源文件已重新计算哈希核对。二分类模型只有2个输出，不能直接当作七分类最终模型使用。
 
 ## 文件内容与恢复
 
-本次五个阶段中，原训练目录内每一对 `best.pt` / `best_accuracy.pt` 都指向同一inode，是同一份内容的硬链接。交付目录按要求为所有15个文件分别创建了独立副本。`last.pt`为不同epoch的另一份文件。以后若按macro-F1与accuracy选到不同轮次，两个best文件可以不同。
+本次七个阶段中，原训练目录内每一对 `best.pt` / `best_accuracy.pt` 都指向同一inode，是同一份内容的硬链接。交付目录按要求为所有21个文件分别创建了独立副本。`last.pt`为不同epoch的另一份文件。以后若按macro-F1与accuracy选到不同轮次，两个best文件可以不同。
 
-- V1/V2/V4完整checkpoint约2.35 GiB，包含全模型及Adam状态。
+- V1/V2/V4/V5完整checkpoint约2.35 GiB，包含全模型及Adam状态。
+- V6完整checkpoint约0.79 GiB，包含完整模型及融合层/分类头的Adam状态。
 - V3完整checkpoint约0.78 GiB，主干仍完整存在，文件较小主要因为只保存分类头的Adam状态；它不是只有1,799个参数的小型推理模型。
 - `best.pt`用于报告中的测试结果与后续评估；`last.pt`用于原目录下继续训练。
-- `runs_binary/seed_42/*.pt`是更早的旧二分类实验，划分不同；`runs_smoke/seed_42/*.pt`是冒烟测试，均不是本次四版最终结果。
+- `runs_binary/seed_42/*.pt`是更早的旧二分类实验，划分不同；`runs_smoke/seed_42/*.pt`是冒烟测试，均不是本次六版最终结果。
 
 加载七分类权重示例（从新仓库根目录执行，`checkpoint_path`指向原始实际文件）：
 

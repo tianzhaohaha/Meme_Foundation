@@ -1,6 +1,6 @@
-# TumEmo 图文情绪分类：四种训练策略
+# TumEmo 图文情绪分类：六种训练策略
 
-使用 **ViT-B/16 + RoBERTa-base**，对比25k直接七分类、二分类预训练后整体微调、二分类预训练后冻结主干，以及5k直接七分类四种方案。训练、准确率和效率指标统一记录到 W&B，支持SSH后台运行和checkpoint恢复。
+使用 **ViT-B/16 + RoBERTa-base**，对比直接训练、源二分类迁移和融合层消融六种方案。训练、准确率和效率指标统一记录到 W&B，支持SSH后台运行和checkpoint恢复。
 
 | 方案 | 数据与训练过程 | 七分类阶段更新范围 |
 |---|---|---|
@@ -8,12 +8,14 @@
 | V2 Full | 20,000条二分类 → 5,000条七分类 | 全参数 |
 | V3 Frozen | 共享V2的二分类checkpoint → 5,000条七分类 | 仅新分类头，1,799个参数 |
 | V4 Direct 5k | 仅固定微调清单中的5,000条，直接七分类 | 全参数；从通用ViT/RoBERTa权重开始，不做二分类预训练 |
+| V5 Reset fusion | 共享源二分类编码器 → 重新初始化融合层及七分类头 → 5k七分类 | 全参数；与V2相比只改变融合层初始化 |
+| V6 Tune fusion | 共享源二分类编码器和融合层 → 新七分类头 → 5k七分类 | 冻结两个编码器，训练融合层及头；395,783个参数 |
 
 本仓库保存源代码、固定样本清单、测试和已核验的聚合实验报告。数据ZIP、图片/文本、模型权重、环境缓存、运行日志和凭据均不在Git中。
 
 ## 已完成的实验
 
-seed42，NVIDIA H200 NVL，batch16，FP32；五个W&B run均已完成，云端summary与逐epoch曲线已和本地记录核对。
+seed42，NVIDIA H200 NVL，batch16，FP32；七个W&B run均已完成，云端summary与逐epoch曲线已和本地记录核对。
 
 | 方案 | 测试accuracy | 测试macro-F1 | 完整方案阶段耗时 | 七分类训练轮数 |
 |---|---:|---:|---:|---:|
@@ -21,8 +23,10 @@ seed42，NVIDIA H200 NVL，batch16，FP32；五个W&B run均已完成，云端su
 | V2 Full | 54.30% | 0.5162 | 21.00分钟 | 6，最佳第2轮 |
 | V3 Frozen | 42.10% | 0.2633 | 23.22分钟 | 20，最佳第18轮 |
 | V4 Direct 5k | 56.90% | 0.5484 | **8.63分钟** | 12，最佳第8轮 |
+| V5 Reset fusion | 54.85% | 0.5283 | 22.41分钟 | 8，最佳第4轮 |
+| V6 Tune fusion | 54.75% | 0.5276 | 19.34分钟 | 8，最佳第4轮 |
 
-完整方案耗时包含设置、训练、验证、保存和最终测试；V2/V3均计入共享二分类的原始成本。冻结版本每步快约2.54倍、第二阶段峰值显存少约81.4%，但训练轮数更多，第二阶段总耗时反而增加约50%。V4完整方案耗时8.63分钟，与V2相比少了源二分类预训练；V2测试accuracy相对V4变化-2.60个百分点。V1使用更多七分类标签，不能把它与其他版本的差异完全归因于训练策略。
+完整方案耗时包含设置、训练、验证、保存和最终测试；V2/V3/V5/V6均计入共享二分类的原始成本。V3冻结版本每步快约2.54倍、第二阶段峰值显存少约81.4%，但训练轮数更多，第二阶段总耗时反而增加约50%。V4完整方案耗时8.63分钟，与V2相比少了源二分类预训练；V2测试accuracy相对V4变化-2.60个百分点。V1使用更多七分类标签，不能把它与其他版本的差异完全归因于训练策略。
 
 ![准确率、耗时与收敛](reports/figures/comparison.png)
 
@@ -35,7 +39,7 @@ seed42，NVIDIA H200 NVL，batch16，FP32；五个W&B run均已完成，云端su
 
 ```text
 tumemo-training/
-  training/                 # 训练代码、四个启动器和原V1→V2→V3后台总脚本
+  training/                 # 六个版本启动器、V1→V2→V3与V5→V6后台队列
   tests/                    # 小模型集成测试、后台队列测试
   tools/plot_results.py      # 从聚合结果重绘图表
   data/manifests/            # 20k/5k训练清单、验证/测试ID清单
@@ -128,6 +132,8 @@ bash training/run_v1_direct.sh
 bash training/run_v2_finetune.sh
 bash training/run_v3_frozen.sh
 bash training/run_v4_direct_5k.sh
+bash training/run_v5_reset_fusion.sh
+bash training/run_v6_tune_fusion.sh
 ```
 
 补充V4时，单独后台运行，沿用前三版的输出根目录和数据缓存：
@@ -144,6 +150,21 @@ tail -f training/background_v4/train.log
 V4写入 `training/runs_comparison/direct_5k/seed_42/`，不会覆盖V1。需要停止时运行 `touch training/background_v4/STOP`，等待当前轮保存；恢复前移除该STOP文件，并在相同启动命令中添加 `--resume`。原总脚本仍只运行V1→V2→V3。为使计时可比，请在前三版队列结束后再启动V4。
 
 V4仅将5,000条目标样本用于梯度更新。预处理仍读取20k/5k清单以复用原来的验证/测试划分，不会将20k样本加入V4训练。它没有第二阶段，因此 `comparison/stage2_*`为空；与V2/V3第二阶段比较时使用V4自身的 `efficiency/*`，完整方案比较使用共同的 `comparison/total_*`。
+
+V5/V6融合层消融使用独立后台队列；已有源二分类结果会复用，保持原V4编号及所有历史目录：
+
+```bash
+bash training/run_fusion_nohup.sh
+bash training/run_fusion_nohup.sh status
+tail -f training/background_fusion/queue.log
+tail -f training/background_fusion/run_v5_reset_fusion.log
+tail -f training/background_fusion/run_v6_tune_fusion.log
+bash training/run_fusion_nohup.sh stop
+# 停止后的恢复，与启动时保持同样参数
+bash training/run_fusion_nohup.sh -- --resume
+```
+
+该队列通过nohup + setsid按V5→V6串行运行。V5将源融合层排除在迁移加载之外，保留创建模型时的全新融合层，之后全部参数可更新。V6加载源融合层并训练它，只有两个编码器处于eval/no_grad。融合层位于no_grad范围之外，梯度可正常更新其权重。两者均使用与V2/V3相同的源checkpoint、5k清单、验证/测试集、优化器和早停规则；源预训练成本计入完整方案耗时，第二阶段成本单独记录。
 
 自定义GPU、数据路径和输出目录：
 
@@ -176,12 +197,14 @@ training/runs_comparison/
   full/seed_42/
   frozen/seed_42/
   direct_5k/seed_42/
+  reset_fusion/seed_42/
+  tune_fusion/seed_42/
   shared_binary/<配置指纹>/seed_42/
   comparison_seed_42.csv
   comparison_seed_42.json
 ```
 
-每阶段包含 `best.pt`（按指定验证指标）、`best_accuracy.pt`（按验证accuracy）、`last.pt`（最后完整epoch，恢复用）、`config.json`、`history.json`、`efficiency.json`、`results.json`。四个七分类阶段另有 `test_metrics.json`。测试只在验证集选好模型后执行；最终报告使用 `best.pt`，不使用 `last.pt`。
+每阶段包含 `best.pt`（按指定验证指标）、`best_accuracy.pt`（按验证accuracy）、`last.pt`（最后完整epoch，恢复用）、`config.json`、`history.json`、`efficiency.json`、`results.json`。六个七分类阶段另有 `test_metrics.json`。测试只在验证集选好模型后执行；最终报告使用 `best.pt`，不使用 `last.pt`。
 
 二分类checkpoint用于初始化源特征，不能直接当七分类模型使用。完整checkpoint包含模型、优化器和随机状态，体积通常比纯模型权重大；不会上传到Git。已完成实验的逐文件索引见 [reports/checkpoints.md](reports/checkpoints.md)，这些历史文件仍位于原项目目录。
 
@@ -199,7 +222,7 @@ python -m pip install -r requirements-analysis.txt
 python tools/plot_results.py
 ```
 
-旧的单独二分类入口 `training/run_train.sh ZIP`仍保留，它使用原20k内部训练/验证划分，与四版本实验不同，不应混合比较。新实验请使用各版本脚本；总脚本仅覆盖原V1→V2→V3。
+旧的单独二分类入口 `training/run_train.sh ZIP`仍保留，它使用原20k内部训练/验证划分，与六版本实验不同，不应混合比较。新实验请使用各版本脚本；run_all_nohup默认覆盖原V1→V2→V3，run_fusion_nohup覆盖V5→V6。
 
 ## 本地Git与后续上传
 

@@ -1,0 +1,66 @@
+{
+  "reference": "full",
+  "same_config_keys": [
+    "dataset_id",
+    "manifest_sha256",
+    "architecture",
+    "num_classes",
+    "sample_counts",
+    "seed",
+    "split_seed",
+    "batch_size",
+    "max_length",
+    "epochs",
+    "patience",
+    "encoder_lr",
+    "head_lr",
+    "dropout",
+    "weight_decay",
+    "warmup_ratio",
+    "class_weight_power",
+    "label_smoothing",
+    "selection_metric",
+    "target_accuracy",
+    "device",
+    "gpu_name",
+    "torch_version",
+    "cuda_version",
+    "precision",
+    "optimizer",
+    "total_steps",
+    "init_checkpoint_sha256"
+  ],
+  "source_checkpoint_sha256": "a098806de821c9d0fde3d90399fa5ef4de06fff4b9c774de6495a97b0d18ee53",
+  "runs": {
+    "reset_fusion": {
+      "config_invariants_match": true,
+      "wandb_summary_and_epochs_match": true,
+      "trainable_parameters": 210249479,
+      "checkpoints": {
+        "best.pt": {
+          "encoder_tensors_equal_to_source": false,
+          "fusion_weights_changed": true
+        },
+        "last.pt": {
+          "encoder_tensors_equal_to_source": false,
+          "fusion_weights_changed": true
+        }
+      }
+    },
+    "tune_fusion": {
+      "config_invariants_match": true,
+      "wandb_summary_and_epochs_match": true,
+      "trainable_parameters": 395783,
+      "checkpoints": {
+        "best.pt": {
+          "encoder_tensors_equal_to_source": true,
+          "fusion_weights_changed": true
+        },
+        "last.pt": {
+          "encoder_tensors_equal_to_source": true,
+          "fusion_weights_changed": true
+        }
+      }
+    }
+  }
+}

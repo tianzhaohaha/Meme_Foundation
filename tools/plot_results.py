@@ -11,9 +11,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
-COLORS = {'direct': '#2463a8', 'full': '#d67522', 'frozen': '#168579', 'direct_5k': '#8c4fa3'}
+COLORS = {'direct': '#2463a8', 'full': '#d67522', 'frozen': '#168579', 'direct_5k': '#8c4fa3',
+          'reset_fusion': '#b34250', 'tune_fusion': '#8a7136'}
 NAMES = {'direct': 'V1 Direct 25k', 'full': 'V2 Full fine-tune', 'frozen': 'V3 Frozen',
-         'direct_5k': 'V4 Direct 5k'}
+         'direct_5k': 'V4 Direct 5k', 'reset_fusion': 'V5 Reset fusion', 'tune_fusion': 'V6 Tune fusion'}
 
 
 def main():
@@ -27,7 +28,7 @@ def main():
                          'axes.titleweight': 'bold', 'figure.facecolor': 'white', 'savefig.facecolor': 'white'})
     variants = [v for v in NAMES if v in runs]
     short_names = [NAMES[v].split()[0] for v in variants]
-    fig, axes = plt.subplots(2, 2, figsize=(12, 8.6), layout='constrained')
+    fig, axes = plt.subplots(2, 2, figsize=(14, 9), layout='constrained')
     x = np.arange(len(variants))
     accuracy = [100 * runs[v]['test']['accuracy'] for v in variants]
     f1 = [100 * runs[v]['test']['macro_f1'] for v in variants]
@@ -40,12 +41,12 @@ def main():
     axes[0, 0].legend(frameon=False)
     binary_minutes = runs['shared_binary']['efficiency']['stage_wall_seconds'] / 60
     stage_minutes = [runs[v]['efficiency']['stage_wall_seconds']/60 for v in variants]
-    bases = [binary_minutes if v in ('full', 'frozen') else 0 for v in variants]
+    bases = [binary_minutes if v in ('full', 'frozen', 'reset_fusion', 'tune_fusion') else 0 for v in variants]
     axes[0, 1].bar(x, bases, color='#bdc5cc', label='Binary pretraining cost')
     axes[0, 1].bar(x, stage_minutes, bottom=bases, color=[COLORS[v] for v in variants], label='Seven-class stage')
     for i, (b, s) in enumerate(zip(bases, stage_minutes)):
         axes[0, 1].text(i, b+s+.4, f'{b+s:.2f} min', ha='center', fontsize=9)
-    axes[0, 1].set(xticks=x, xticklabels=short_names, ylim=(0, max(28, max(b+s for b,s in zip(bases,stage_minutes))+4)), ylabel='Minutes', title='Full method cost (shared pretraining charged to both)')
+    axes[0, 1].set(xticks=x, xticklabels=short_names, ylim=(0, max(28, max(b+s for b,s in zip(bases,stage_minutes))+4)), ylabel='Minutes', title='Full method cost (pretraining charged to each transfer run)')
     axes[0, 1].legend(frameon=False, fontsize=9)
     for v in variants:
         h = runs[v]['history']
@@ -67,7 +68,7 @@ def main():
     fig.savefig(args.output / 'comparison.pdf')
     plt.close(fig)
     labels = ['Angry', 'Bored', 'Calm', 'Fear', 'Happy', 'Love', 'Sad']
-    columns = 2 if len(variants) == 4 else len(variants)
+    columns = 2 if len(variants) == 4 else min(3, len(variants))
     rows = (len(variants) + columns - 1) // columns
     fig, axes = plt.subplots(rows, columns, figsize=(5*columns, 4.6*rows), layout='constrained', squeeze=False)
     for ax, variant in zip(axes.flat, variants):

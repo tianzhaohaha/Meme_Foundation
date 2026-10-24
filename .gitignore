@@ -24,6 +24,7 @@ prepared*/
 runs*/
 background_comparison/
 background_v4/
+background_fusion/
 wandb/
 *.pt
 *.pth

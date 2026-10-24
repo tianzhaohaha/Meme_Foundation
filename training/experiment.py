@@ -1,4 +1,4 @@
-"""Run four strategies; share binary pretraining across full/frozen runs."""
+"""Compare direct training and transfer ablations using shared binary pretraining."""
 import argparse
 import copy
 import csv
@@ -25,6 +25,8 @@ from training_engine import run_stage, file_sha256
 
 HERE = Path(__file__).resolve().parent
 PROJECT = HERE.parent
+VARIANTS = ('direct', 'full', 'frozen', 'direct_5k', 'reset_fusion', 'tune_fusion')
+TRANSFER_VARIANTS = ('full', 'frozen', 'reset_fusion', 'tune_fusion')
 
 
 @contextmanager
@@ -43,7 +45,7 @@ def exclusive(path):
 
 def parser():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--variant', choices=['direct', 'full', 'frozen', 'direct_5k'], required=True)
+    p.add_argument('--variant', choices=VARIANTS, required=True)
     p.add_argument('--data', type=Path, default=PROJECT / 'data/subset_50000.zip')
     p.add_argument('--source-list', type=Path, default=PROJECT / 'data/manifests/source_binary_20000.tsv')
     p.add_argument('--target-list', type=Path, default=PROJECT / 'data/manifests/finetune_5000.tsv')
@@ -85,6 +87,8 @@ def stage_arguments(args, dataset, binary=False):
     stage.stage = 'binary' if binary else 'direct' if args.variant in ('direct', 'direct_5k') else 'stage2'
     stage.variant = 'shared_binary' if binary else args.variant
     stage.freeze_backbone = not binary and args.variant == 'frozen'
+    stage.freeze_encoders = not binary and args.variant in ('frozen', 'tune_fusion')
+    stage.reset_fusion = not binary and args.variant == 'reset_fusion'
     stage.epochs = args.binary_epochs if binary else args.epochs
     stage.patience = args.binary_patience if binary else args.patience
     stage.selection_metric = 'macro_f1' if binary else args.selection_metric
@@ -99,18 +103,25 @@ def execute_stage(stage, rows, tokenizer, resume_allowed):
         return {'status': 'stopped'}, False
     out = stage.output / f'seed_{stage.seed}'
     # Operational flags (W&B mode, output, resume) must not change model identity.
-    keys = ('dataset_id', 'architecture', 'num_classes', 'freeze_backbone', 'epochs', 'patience', 'batch_size',
+    keys = ('dataset_id', 'architecture', 'num_classes', 'freeze_backbone', 'freeze_encoders', 'reset_fusion',
+            'epochs', 'patience', 'batch_size',
             'max_length', 'encoder_lr', 'head_lr', 'dropout', 'weight_decay', 'warmup_ratio',
             'class_weight_power', 'label_smoothing', 'selection_metric', 'seed', 'target_accuracy', 'device')
     expected = {k: getattr(stage, k) for k in keys}
     expected['rows_sha256'] = fingerprint(rows)
     expected['init_checkpoint_sha256'] = file_sha256(stage.init_checkpoint) if stage.init_checkpoint else None
     identity = out / 'stage_identity.json'
-    if identity.exists() and json.loads(identity.read_text()) != expected:
-        raise ValueError(f'Experiment configuration changed in {out}; choose a new --output directory')
+    if identity.exists():
+        recorded = json.loads(identity.read_text())
+        # Old identities predate these ablations; their behavior is unchanged.
+        recorded.setdefault('freeze_encoders', recorded['freeze_backbone'])
+        recorded.setdefault('reset_fusion', False)
+        if recorded != expected:
+            raise ValueError(f'Experiment configuration changed in {out}; choose a new --output directory')
     if not identity.exists() and (out / 'last.pt').exists():
         raise ValueError(f'Existing checkpoint has no experiment identity: {out}')
-    write_json(identity, expected)
+    if not identity.exists():
+        write_json(identity, expected)
     result_file = out / 'results.json'
     if result_file.exists():
         result = json.loads(result_file.read_text())
@@ -134,7 +145,7 @@ def execute_stage(stage, rows, tokenizer, resume_allowed):
 
 def comparison_table(output, dataset_id, architecture, seed):
     entries = []
-    for variant in ('direct', 'full', 'frozen', 'direct_5k'):
+    for variant in VARIANTS:
         path = output / variant / f'seed_{seed}' / 'results.json'
         if not path.exists():
             continue
@@ -206,7 +217,7 @@ def main():
         final = stage_arguments(args, dataset)
         final.output = args.output / args.variant
         final.data_preparation_seconds = preparation_seconds
-        if args.variant in ('full', 'frozen'):
+        if args.variant in TRANSFER_VARIANTS:
             binary = stage_arguments(args, dataset, binary=True)
             binary_rows = stage_rows(dataset['records'], args.variant, binary=True)
             binary_keys = ('architecture', 'epochs', 'patience', 'batch_size', 'max_length', 'encoder_lr', 'head_lr',

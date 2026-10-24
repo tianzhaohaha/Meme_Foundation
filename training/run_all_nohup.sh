@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One detached queue, three sequential experiments. Arguments are arrays, never eval.
+# One detached queue, sequential experiments. Arguments are arrays, never eval.
 set -euo pipefail
 umask 077
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
@@ -8,9 +8,9 @@ SCRIPT_PATH="$SCRIPT_DIR/run_all_nohup.sh"
 usage() {
   cat <<'HELP'
 Usage:
-  bash run_all_nohup.sh [start] [--log-dir DIR] [--] [experiment options]
-  bash run_all_nohup.sh status [--log-dir DIR]
-  bash run_all_nohup.sh stop [--log-dir DIR]
+  bash run_all_nohup.sh [start] [--suite baseline|fusion] [--log-dir DIR] [--] [experiment options]
+  bash run_all_nohup.sh status [--suite baseline|fusion] [--log-dir DIR]
+  bash run_all_nohup.sh stop [--suite baseline|fusion] [--log-dir DIR]
 
 Examples:
   bash run_all_nohup.sh
@@ -18,7 +18,8 @@ Examples:
   WANDB_MODE=offline bash run_all_nohup.sh -- --batch-size 16
   bash run_all_nohup.sh --log-dir /path/to/logs -- --output /path/to/results
 
-Runs v1 -> v2 -> v3 sequentially with nohup + setsid. Stops on any failure or
+Default suite runs v1 -> v2 -> v3; fusion suite runs v5 -> v6.
+Runs sequentially with nohup + setsid. Stops on any failure or
 graceful training stop. Reconnect using 'status' and tail the printed log paths.
 Use the same options and --resume to continue an interrupted queue.
 HELP
@@ -40,7 +41,8 @@ queue_alive() {
 
 if [[ "${1:-}" == --worker ]]; then
   LOG_DIR="$2"
-  shift 2
+  SUITE="$3"
+  shift 3
   child=''
   stopped=0
   stop_queue() {
@@ -54,7 +56,11 @@ if [[ "${1:-}" == --worker ]]; then
   printf '%s %s\n' "$$" "$(process_stamp "$$")" > "$LOG_DIR/queue.pid.tmp"
   mv -f -- "$LOG_DIR/queue.pid.tmp" "$LOG_DIR/queue.pid"
   write_state running
-  scripts=(run_v1_direct.sh run_v2_finetune.sh run_v3_frozen.sh)
+  case "$SUITE" in
+    baseline) scripts=(run_v1_direct.sh run_v2_finetune.sh run_v3_frozen.sh) ;;
+    fusion) scripts=(run_v5_reset_fusion.sh run_v6_tune_fusion.sh) ;;
+    *) echo "Unknown suite: $SUITE" >&2; exit 2 ;;
+  esac
   for script in "${scripts[@]}"; do
     if [[ "$stopped" == 1 || -e "$LOG_DIR/STOP" ]]; then
       write_state stopped
@@ -96,13 +102,23 @@ case "${1:-}" in
   start|status|stop) action="$1"; shift ;;
   -h|--help) usage; exit 0 ;;
 esac
-LOG_DIR="$SCRIPT_DIR/background_comparison"
-if [[ "${1:-}" == --log-dir ]]; then
-  [[ "$#" -ge 2 ]] || { usage >&2; exit 2; }
-  LOG_DIR="$2"
-  shift 2
-fi
-if [[ "${1:-}" == -- ]]; then shift; fi
+LOG_DIR=''
+SUITE=baseline
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    --log-dir|--suite)
+      [[ "$#" -ge 2 ]] || { usage >&2; exit 2; }
+      if [[ "$1" == --log-dir ]]; then LOG_DIR="$2"; else SUITE="$2"; fi
+      shift 2 ;;
+    --) shift; break ;;
+    *) break ;;
+  esac
+done
+case "$SUITE" in
+  baseline) LOG_DIR="${LOG_DIR:-$SCRIPT_DIR/background_comparison}" ;;
+  fusion) LOG_DIR="${LOG_DIR:-$SCRIPT_DIR/background_fusion}" ;;
+  *) echo "Unknown suite: $SUITE" >&2; exit 2 ;;
+esac
 mkdir -p -- "$LOG_DIR"
 LOG_DIR="$(cd -- "$LOG_DIR" && pwd)"
 if [[ "$action" == status ]]; then
@@ -137,7 +153,7 @@ fi
 : > "$LOG_DIR/queue.pid"
 write_state starting
 # FD 9 is inherited by the worker and remains locked for the entire queue.
-nohup setsid bash "$SCRIPT_PATH" --worker "$LOG_DIR" "$@" >> "$LOG_DIR/queue.log" 2>&1 < /dev/null &
+nohup setsid bash "$SCRIPT_PATH" --worker "$LOG_DIR" "$SUITE" "$@" >> "$LOG_DIR/queue.log" 2>&1 < /dev/null &
 for ((attempt=0; attempt<50; attempt++)); do
   [[ ! -s "$LOG_DIR/queue.pid" ]] || break
   sleep 0.1
@@ -148,5 +164,5 @@ if ! queue_alive; then
   [[ "$state" == completed ]] || { echo "Startup failed: $state. See $LOG_DIR" >&2; exit 1; }
 fi
 printf 'Detached queue started. Logs: %s\n' "$LOG_DIR"
-printf 'Status: bash %q status --log-dir %q\n' "$SCRIPT_PATH" "$LOG_DIR"
+printf 'Status: bash %q status --suite %q --log-dir %q\n' "$SCRIPT_PATH" "$SUITE" "$LOG_DIR"
 printf 'Follow: tail -f %q\n' "$LOG_DIR/queue.log"

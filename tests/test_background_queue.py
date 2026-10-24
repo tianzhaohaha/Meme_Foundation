@@ -18,10 +18,12 @@ class BackgroundQueueTest(unittest.TestCase):
         self.root = Path(self.temp.name)
         self.script = self.root / 'run_all_nohup.sh'
         shutil.copyfile(HERE / self.script.name, self.script)
+        shutil.copyfile(HERE / 'run_fusion_nohup.sh', self.root / 'run_fusion_nohup.sh')
         self.logs = self.root / 'logs with spaces'
         self.events = self.root / 'events'
         self.env = {**os.environ, 'QUEUE_TEST_DIR': str(self.root)}
-        for index, name in enumerate(('run_v1_direct.sh', 'run_v2_finetune.sh', 'run_v3_frozen.sh'), 1):
+        for index, name in ((1, 'run_v1_direct.sh'), (2, 'run_v2_finetune.sh'), (3, 'run_v3_frozen.sh'),
+                            (5, 'run_v5_reset_fusion.sh'), (6, 'run_v6_tune_fusion.sh')):
             (self.root / name).write_text(f'''#!/usr/bin/env bash
 set -euo pipefail
 printf 'start {index}\\n' >> "$QUEUE_TEST_DIR/events"
@@ -73,6 +75,14 @@ printf 'end {index}\\n' >> "$QUEUE_TEST_DIR/events"
         self.invoke()
         self.wait_for(lambda: self.state().startswith('failed'))
         self.assertEqual(self.events.read_text().splitlines(), ['start 1'])
+
+    def test_fusion_wrapper_runs_only_v5_then_v6(self):
+        result = subprocess.run(['bash', str(self.root / 'run_fusion_nohup.sh'), '--log-dir', str(self.logs),
+                                 '--', '--seed', '42'], env=self.env, capture_output=True, text=True, timeout=10)
+        self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+        self.wait_for(lambda: self.state() == 'completed')
+        self.assertEqual(self.events.read_text().splitlines(), ['start 5', 'end 5', 'start 6', 'end 6'])
+        self.assertEqual((self.logs / 'queue.log').read_text().count('Command:'), 2)
 
     def test_hangup_lock_and_graceful_stop(self):
         (self.root / 'block').touch()

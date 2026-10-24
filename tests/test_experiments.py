@@ -100,17 +100,60 @@ class ExperimentsTest(unittest.TestCase):
         self.assertFalse(torch.equal(before['head.1.weight'], net.head[1].weight))
         self.assertEqual({n for n, p in net.named_parameters() if p.requires_grad}, {'head.1.weight', 'head.1.bias'})
 
-    def test_four_workflows_reuse_pretraining_and_compare(self):
+    def test_reset_fusion_transfers_encoders_and_keeps_fresh_downstream_layers(self):
+        torch.manual_seed(1)
+        source = model.EmotionModel(num_classes=2)
+        torch.manual_seed(42)
+        target = model.EmotionModel(num_classes=7)
+        fresh = {k: v.clone() for k, v in target.state_dict().items()}
+        rng = torch.get_rng_state().clone()
+        training_engine.transfer_backbone(target, {'model_state_dict': source.state_dict()}, reset_fusion=True)
+        self.assertTrue(torch.equal(rng, torch.get_rng_state()))
+        for name, value in target.state_dict().items():
+            expected = fresh[name] if name.startswith(('head.', 'fusion.')) else source.state_dict()[name]
+            self.assertTrue(torch.equal(value, expected), name)
+        self.assertFalse(torch.equal(target.fusion[0].weight, source.fusion[0].weight))
+
+    def test_train_fusion_preserves_encoders_and_updates_both_downstream_modules(self):
+        torch.manual_seed(42)
+        net = model.EmotionModel(num_classes=7)
+        net.freeze_backbone(train_fusion=True)
+        before = {k: v.clone() for k, v in net.state_dict().items()}
+        net.train()
+        self.assertFalse(net.image_encoder.training)
+        self.assertFalse(net.text_encoder.training)
+        self.assertTrue(net.fusion.training)
+        self.assertTrue(net.head.training)
+        optimizer = torch.optim.Adam([p for p in net.parameters() if p.requires_grad], lr=.01)
+        logits = net(torch.rand(7, 3, 12, 12), torch.ones(7, 2, dtype=torch.long), torch.ones(7, 2))
+        nn.functional.cross_entropy(logits, torch.arange(7)).backward()
+        optimizer.step()
+        for name, value in net.state_dict().items():
+            if name.startswith(('image_encoder.', 'text_encoder.')):
+                self.assertTrue(torch.equal(before[name], value), name)
+        for name in ('fusion.0.weight', 'fusion.1.weight', 'head.1.weight'):
+            self.assertFalse(torch.equal(before[name], net.state_dict()[name]), name)
+        self.assertEqual({n.split('.')[0] for n,p in net.named_parameters() if p.requires_grad}, {'fusion', 'head'})
+        self.assertTrue(all(p.grad is None for n,p in net.named_parameters() if n.startswith(('image_encoder.', 'text_encoder.'))))
+
+    def test_six_workflows_reuse_pretraining_and_compare(self):
         output = self.root / 'runs'
-        for variant in ('direct', 'full', 'frozen', 'direct_5k'):
+        for variant in experiment.VARIANTS:
             argv = ['experiment.py', '--variant', variant, '--device', 'cpu', '--wandb-mode', 'disabled',
                     '--output', str(output), '--cache', str(self.root / 'cache'), '--epochs', '1',
                     '--binary-epochs', '1', '--batch-size', '7']
             with patch.object(sys, 'argv', argv), patch.object(experiment, 'prepare_experiment', return_value=self.dataset), \
                  patch.object(experiment.AutoTokenizer, 'from_pretrained', return_value=tokenize):
                 experiment.main()
+            if variant == 'full':
+                # Simulate the source-stage identity created by the earlier code.
+                identity = next((output / 'shared_binary').glob('*/seed_42/stage_identity.json'))
+                old = json.loads(identity.read_text())
+                old.pop('reset_fusion')
+                old.pop('freeze_encoders')
+                identity.write_text(json.dumps(old))
         result = {v: json.loads((output / v / 'seed_42/results.json').read_text())
-                  for v in ('direct', 'full', 'frozen', 'direct_5k')}
+                  for v in experiment.VARIANTS}
         self.assertEqual(result['direct']['config']['sample_counts']['train'], 14)
         self.assertEqual(result['full']['config']['sample_counts']['train'], 7)
         self.assertEqual(result['frozen']['config']['trainable_modules'], ['head'])
@@ -118,7 +161,7 @@ class ExperimentsTest(unittest.TestCase):
         self.assertTrue(result['frozen']['comparison']['pretraining_reused'])
         self.assertEqual(len(list((output / 'shared_binary').glob('*/seed_42/results.json'))), 1)
         comparison = json.loads((output / 'comparison_seed_42.json').read_text())
-        self.assertEqual(len(comparison), 4)
+        self.assertEqual(len(comparison), 6)
         baseline = result['direct_5k']
         self.assertEqual(baseline['config']['stage'], 'direct')
         self.assertEqual(baseline['config']['sample_counts'], {'train': 7, 'validation': 7, 'test': 7})
@@ -129,6 +172,14 @@ class ExperimentsTest(unittest.TestCase):
         self.assertEqual(baseline['comparison']['pretraining_train_seconds'], 0)
         self.assertIsNone(baseline['comparison']['stage2_train_seconds'])
         self.assertFalse((output / 'direct_5k/seed_42/pretraining.json').exists())
+        for variant in ('reset_fusion', 'tune_fusion'):
+            self.assertEqual(result[variant]['config']['sample_counts']['train'], 7)
+            self.assertEqual(result[variant]['config']['init_checkpoint_sha256'], result['full']['config']['init_checkpoint_sha256'])
+            self.assertTrue(result[variant]['comparison']['pretraining_reused'])
+        self.assertTrue(result['reset_fusion']['config']['reset_fusion'])
+        self.assertEqual(result['reset_fusion']['config']['trainable_modules'], baseline['config']['trainable_modules'])
+        self.assertFalse(result['tune_fusion']['config']['reset_fusion'])
+        self.assertEqual(result['tune_fusion']['config']['trainable_modules'], ['fusion', 'head'])
         for variant, r in result.items():
             self.assertEqual(sum(sum(row) for row in r['test']['confusion_matrix']), 7)
             self.assertGreater(r['efficiency']['samples_per_second'], 0)
@@ -144,6 +195,11 @@ class ExperimentsTest(unittest.TestCase):
                                      full['model_state_dict']['image_encoder.project.weight']))
         for name in ('text_encoder.embedding.weight', 'fusion.0.weight'):
             self.assertFalse(torch.equal(pretrained['model_state_dict'][name], full['model_state_dict'][name]), name)
+        tuned = load_checkpoint(output / 'tune_fusion/seed_42/last.pt')
+        for name, value in pretrained['model_state_dict'].items():
+            if name.startswith(('image_encoder.', 'text_encoder.')):
+                self.assertTrue(torch.equal(value, tuned['model_state_dict'][name]), name)
+        self.assertFalse(torch.equal(pretrained['model_state_dict']['fusion.0.weight'], tuned['model_state_dict']['fusion.0.weight']))
         self.assertEqual(result['direct']['comparison']['seven_class_labeled_train_samples'], 14)
         self.assertEqual(result['full']['comparison']['seven_class_labeled_train_samples'], 7)
         # Changing a learning rate between strategies must not silently enter one comparison.
@@ -182,6 +238,34 @@ class ExperimentsTest(unittest.TestCase):
         torch.save(UnsafeCheckpoint(), path)
         with self.assertRaisesRegex(ValueError, 'restricted format'):
             load_checkpoint(path)
+
+    def test_fusion_policies_resume_exactly_and_reject_changed_policy(self):
+        source = self.root / 'source.pt'
+        torch.save({'model_state_dict': model.EmotionModel(num_classes=2).state_dict()}, source)
+        for variant in ('reset_fusion', 'tune_fusion'):
+            with self.subTest(variant=variant):
+                rows = stage_rows(self.rows, variant)
+                reference = self.args(self.root / f'{variant}_reference', variant=variant)
+                reference.init_checkpoint = source
+                run_stage(reference, rows, tokenize, 42)
+                resumed = self.args(self.root / f'{variant}_resumed', variant=variant)
+                resumed.init_checkpoint = source
+                out = resumed.output / 'seed_42'
+                out.mkdir(parents=True)
+                (out / 'STOP').touch()
+                first = run_stage(resumed, rows, tokenize, 42)
+                self.assertEqual(first['status'], 'stopped')
+                (out / 'STOP').unlink()
+                resumed.resume = out / 'last.pt'
+                self.assertEqual(run_stage(resumed, rows, tokenize, 42)['status'], 'completed')
+                expected = load_checkpoint(reference.output / 'seed_42/last.pt')
+                actual = load_checkpoint(out / 'last.pt')
+                for name, value in expected['model_state_dict'].items():
+                    self.assertTrue(torch.equal(value, actual['model_state_dict'][name]), name)
+                for key in ('reset_fusion', 'freeze_encoders'):
+                    changed = {**actual['config'], key: not actual['config'][key]}
+                    with self.assertRaisesRegex(ValueError, key):
+                        training_engine.validate_resume(actual['config'], changed)
 
     def test_recover_crash_between_last_and_best_publication(self):
         args = self.args(self.root / 'interrupted', epochs=1)
@@ -236,7 +320,7 @@ class ExperimentsTest(unittest.TestCase):
         binary = stage_rows(self.rows, 'full', binary=True)
         self.assertEqual({r['split'] for r in binary}, {'train', 'validation'})
         self.assertEqual({r['label'] for r in binary}, {0, 1})
-        for variant in ('direct', 'full', 'frozen', 'direct_5k'):
+        for variant in experiment.VARIANTS:
             selected = stage_rows(self.rows, variant)
             self.assertEqual({r['id'] for r in selected if r['split'] == 'test'}, {r['id'] for r in self.rows if r['split'] == 'test'})
         baseline = stage_rows(self.rows, 'direct_5k')
