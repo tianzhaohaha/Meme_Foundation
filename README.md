@@ -1,5 +1,7 @@
 # TumEmo 图文情绪分类：六种训练策略与Qwen零样本评估
 
+**只看实验结果与分析，请直接打开[报告目录](reports/README.md)。** 所有报告、图表和支撑数据集中在 `reports/`，无需配置训练环境即可阅读。
+
 使用 **ViT-B/16 + RoBERTa-base**，对比直接训练、源二分类迁移和融合层消融六种方案。训练、准确率和效率指标统一记录到 W&B，支持SSH后台运行和checkpoint恢复。
 
 另在同一2,000条validation上完成Qwen3-VL-4B/8B-Instruct零样本七分类，accuracy分别为 **47.75% / 48.90%**，macro-F1为 **0.4538 / 0.4728**。原V1/V4在validation上为57.55%/56.50%；这些数字与下方test结果分开比较。详见[技术报告](reports/experiment_review.md#qwen零样本七分类同一2000条validation)和[VLM复现说明](docs/vlm_validation.md)。
@@ -54,6 +56,7 @@ seed42，NVIDIA H200 NVL，batch16，FP32；七个监督训练W&B run均已完�
 ![准确率、耗时与收敛](reports/figures/comparison.png)
 
 - [完整结果分析与W&B链接](reports/experiment_review.md)
+- [全部报告与图表导航](reports/README.md)
 - [checkpoint逐文件对应表](reports/checkpoints.md) / [CSV](reports/checkpoints.csv)
 - [可重绘的聚合数据](reports/data/seed42.json)
 - [实验配置与比较口径](docs/experiment_protocol.md)
@@ -70,7 +73,7 @@ Meme_Foundation/
   tools/plot_results.py      # 从聚合结果重绘图表
   data/manifests/            # 20k/5k训练清单、验证/测试ID清单
   docs/                     # 实验协议、可重复运行说明
-  reports/                  # 结果分析、checkpoint索引、图表与聚合指标
+  reports/                  # 独立报告目录；从reports/README.md开始阅读
   requirements.txt          # 训练依赖；PyTorch单独安装
   requirements-analysis.txt # 可选绘图依赖
   requirements-reproduction.txt # 本次历史实验的PyTorch版本
