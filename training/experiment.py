@@ -1,4 +1,4 @@
-"""Run one of three strategies; share binary pretraining across full/frozen runs."""
+"""Run four strategies; share binary pretraining across full/frozen runs."""
 import argparse
 import copy
 import csv
@@ -34,7 +34,7 @@ def exclusive(path):
         try:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError as exc:
-            raise RuntimeError(f'Another experiment is using {path}; run the three scripts sequentially.') from exc
+            raise RuntimeError(f'Another experiment is using {path}; run the scripts sequentially.') from exc
         try:
             yield
         finally:
@@ -43,7 +43,7 @@ def exclusive(path):
 
 def parser():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--variant', choices=['direct', 'full', 'frozen'], required=True)
+    p.add_argument('--variant', choices=['direct', 'full', 'frozen', 'direct_5k'], required=True)
     p.add_argument('--data', type=Path, default=PROJECT / 'data/subset_50000.zip')
     p.add_argument('--source-list', type=Path, default=PROJECT / 'data/manifests/source_binary_20000.tsv')
     p.add_argument('--target-list', type=Path, default=PROJECT / 'data/manifests/finetune_5000.tsv')
@@ -82,7 +82,7 @@ def stage_arguments(args, dataset, binary=False):
     stage = copy.copy(args)
     stage.dataset_id = dataset['dataset_id']
     stage.num_classes = 2 if binary else 7
-    stage.stage = 'binary' if binary else 'direct' if args.variant == 'direct' else 'stage2'
+    stage.stage = 'binary' if binary else 'direct' if args.variant in ('direct', 'direct_5k') else 'stage2'
     stage.variant = 'shared_binary' if binary else args.variant
     stage.freeze_backbone = not binary and args.variant == 'frozen'
     stage.epochs = args.binary_epochs if binary else args.epochs
@@ -134,7 +134,7 @@ def execute_stage(stage, rows, tokenizer, resume_allowed):
 
 def comparison_table(output, dataset_id, architecture, seed):
     entries = []
-    for variant in ('direct', 'full', 'frozen'):
+    for variant in ('direct', 'full', 'frozen', 'direct_5k'):
         path = output / variant / f'seed_{seed}' / 'results.json'
         if not path.exists():
             continue
@@ -206,7 +206,7 @@ def main():
         final = stage_arguments(args, dataset)
         final.output = args.output / args.variant
         final.data_preparation_seconds = preparation_seconds
-        if args.variant != 'direct':
+        if args.variant in ('full', 'frozen'):
             binary = stage_arguments(args, dataset, binary=True)
             binary_rows = stage_rows(dataset['records'], args.variant, binary=True)
             binary_keys = ('architecture', 'epochs', 'patience', 'batch_size', 'max_length', 'encoder_lr', 'head_lr',

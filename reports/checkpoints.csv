@@ -11,3 +11,6 @@ runs_comparison/full/seed_42/last.pt,last.pt,6,full,stage2,7,accuracy,0.535,0.50
 runs_comparison/shared_binary/e1555ba804919d21/seed_42/best.pt,best.pt,3,shared_binary,binary,2,macro_f1,0.8175,0.8169563144931232,2523416720,,2.350114956498146,True
 runs_comparison/shared_binary/e1555ba804919d21/seed_42/best_accuracy.pt,best_accuracy.pt,3,shared_binary,binary,2,macro_f1,0.8175,0.8169563144931232,2523416720,,2.350114956498146,True
 runs_comparison/shared_binary/e1555ba804919d21/seed_42/last.pt,last.pt,7,shared_binary,binary,2,macro_f1,0.7955,0.7932421526171171,2523418064,,2.3501162081956863,False
+runs_comparison/direct_5k/seed_42/best.pt,best.pt,8,direct_5k,direct,7,accuracy,0.565,0.5423889004298481,2523434896,,2.3501318842172623,True
+runs_comparison/direct_5k/seed_42/best_accuracy.pt,best_accuracy.pt,8,direct_5k,direct,7,accuracy,0.565,0.5423889004298481,2523434896,,2.3501318842172623,True
+runs_comparison/direct_5k/seed_42/last.pt,last.pt,12,direct_5k,direct,7,accuracy,0.55,0.5268964927419263,2523436496,,2.3501333743333817,False

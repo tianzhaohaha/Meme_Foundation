@@ -1,8 +1,8 @@
 # Checkpoint 对应关系
 
-以下12个文件均已读取实际checkpoint元数据核对。路径相对于**原项目的 `TumEmo_Binary_Training_Handoff/` 目录**；这些大文件保留在原目录，不包含在可上传Git仓库中。新仓库未来训练默认写入 `training/runs_comparison/`。
+以下15个文件均已读取实际checkpoint元数据核对。路径相对于**原项目的 `TumEmo_Binary_Training_Handoff/` 目录**；这些大文件保留在原目录，不包含在可上传Git仓库中。新仓库未来训练默认写入 `training/runs_comparison/`。
 
-## 三个最终七分类模型
+## 四个最终七分类模型
 
 | 用途 | 文件相对路径 | epoch | 验证accuracy | 该最佳模型测试accuracy |
 |---|---|---:|---:|---:|
@@ -15,6 +15,9 @@
 | V3推荐评估/推理 | `runs_comparison/frozen/seed_42/best.pt` | 18 | 41.65% | **42.10%** |
 | V3按accuracy选出的副本名称 | `runs_comparison/frozen/seed_42/best_accuracy.pt` | 18 | 41.65% | 同上 |
 | V3断点恢复 | `runs_comparison/frozen/seed_42/last.pt` | 20 | 41.65% | 未单独测试 |
+| V4推荐评估/推理 | `runs_comparison/direct_5k/seed_42/best.pt` | 8 | 56.50% | 56.90% |
+| V4按accuracy选出的副本名称 | `runs_comparison/direct_5k/seed_42/best_accuracy.pt` | 8 | 56.50% | 56.90% |
+| V4断点恢复 | `runs_comparison/direct_5k/seed_42/last.pt` | 12 | 55.00% | 未单独测试 |
 
 V3第20轮验证accuracy与第18轮持平，但模型参数和macro-F1不同；最终42.10%的测试结果对应第18轮 `best.pt`，不能无验证地归到 `last.pt`。
 
@@ -36,12 +39,12 @@ V2、V3的配置记录了相同来源哈希，源文件已重新计算哈希核�
 
 ## 文件内容与恢复
 
-本次四个阶段中，每一对 `best.pt` / `best_accuracy.pt` 都指向同一inode，是同一份内容的硬链接；无需同时拷贝两份来保留模型。`last.pt`为不同epoch的另一份文件。以后若按macro-F1与accuracy选到不同轮次，两个best文件可以不同。
+本次五个阶段中，原训练目录内每一对 `best.pt` / `best_accuracy.pt` 都指向同一inode，是同一份内容的硬链接。交付目录按要求为所有15个文件分别创建了独立副本。`last.pt`为不同epoch的另一份文件。以后若按macro-F1与accuracy选到不同轮次，两个best文件可以不同。
 
-- V1/V2完整checkpoint约2.35 GiB，包含全模型及Adam状态。
+- V1/V2/V4完整checkpoint约2.35 GiB，包含全模型及Adam状态。
 - V3完整checkpoint约0.78 GiB，主干仍完整存在，文件较小主要因为只保存分类头的Adam状态；它不是只有1,799个参数的小型推理模型。
 - `best.pt`用于报告中的测试结果与后续评估；`last.pt`用于原目录下继续训练。
-- `runs_binary/seed_42/*.pt`是更早的旧二分类实验，划分不同；`runs_smoke/seed_42/*.pt`是冒烟测试，均不是本次三版最终结果。
+- `runs_binary/seed_42/*.pt`是更早的旧二分类实验，划分不同；`runs_smoke/seed_42/*.pt`是冒烟测试，均不是本次四版最终结果。
 
 加载七分类权重示例（从新仓库根目录执行，`checkpoint_path`指向原始实际文件）：
 

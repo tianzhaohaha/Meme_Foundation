@@ -23,6 +23,7 @@ data/*
 prepared*/
 runs*/
 background_comparison/
+background_v4/
 wandb/
 *.pt
 *.pth

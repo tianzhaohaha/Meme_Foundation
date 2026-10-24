@@ -178,5 +178,50 @@
     "source_sha256": null,
     "size_gib": 2.3501162081956863,
     "same_file_as_best": false
+  },
+  {
+    "path": "runs_comparison/direct_5k/seed_42/best.pt",
+    "name": "best.pt",
+    "epoch": 8,
+    "variant": "direct_5k",
+    "stage": "direct",
+    "num_classes": 7,
+    "selection_metric": "accuracy",
+    "validation_accuracy": 0.565,
+    "validation_macro_f1": 0.5423889004298481,
+    "bytes": 2523434896,
+    "source_sha256": null,
+    "size_gib": 2.3501318842172623,
+    "same_file_as_best": true
+  },
+  {
+    "path": "runs_comparison/direct_5k/seed_42/best_accuracy.pt",
+    "name": "best_accuracy.pt",
+    "epoch": 8,
+    "variant": "direct_5k",
+    "stage": "direct",
+    "num_classes": 7,
+    "selection_metric": "accuracy",
+    "validation_accuracy": 0.565,
+    "validation_macro_f1": 0.5423889004298481,
+    "bytes": 2523434896,
+    "source_sha256": null,
+    "size_gib": 2.3501318842172623,
+    "same_file_as_best": true
+  },
+  {
+    "path": "runs_comparison/direct_5k/seed_42/last.pt",
+    "name": "last.pt",
+    "epoch": 12,
+    "variant": "direct_5k",
+    "stage": "direct",
+    "num_classes": 7,
+    "selection_metric": "accuracy",
+    "validation_accuracy": 0.55,
+    "validation_macro_f1": 0.5268964927419263,
+    "bytes": 2523436496,
+    "source_sha256": null,
+    "size_gib": 2.3501333743333817,
+    "same_file_as_best": false
   }
 ]

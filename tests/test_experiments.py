@@ -100,16 +100,17 @@ class ExperimentsTest(unittest.TestCase):
         self.assertFalse(torch.equal(before['head.1.weight'], net.head[1].weight))
         self.assertEqual({n for n, p in net.named_parameters() if p.requires_grad}, {'head.1.weight', 'head.1.bias'})
 
-    def test_three_workflows_reuse_pretraining_and_compare(self):
+    def test_four_workflows_reuse_pretraining_and_compare(self):
         output = self.root / 'runs'
-        for variant in ('direct', 'full', 'frozen'):
+        for variant in ('direct', 'full', 'frozen', 'direct_5k'):
             argv = ['experiment.py', '--variant', variant, '--device', 'cpu', '--wandb-mode', 'disabled',
                     '--output', str(output), '--cache', str(self.root / 'cache'), '--epochs', '1',
                     '--binary-epochs', '1', '--batch-size', '7']
             with patch.object(sys, 'argv', argv), patch.object(experiment, 'prepare_experiment', return_value=self.dataset), \
                  patch.object(experiment.AutoTokenizer, 'from_pretrained', return_value=tokenize):
                 experiment.main()
-        result = {v: json.loads((output / v / 'seed_42/results.json').read_text()) for v in ('direct', 'full', 'frozen')}
+        result = {v: json.loads((output / v / 'seed_42/results.json').read_text())
+                  for v in ('direct', 'full', 'frozen', 'direct_5k')}
         self.assertEqual(result['direct']['config']['sample_counts']['train'], 14)
         self.assertEqual(result['full']['config']['sample_counts']['train'], 7)
         self.assertEqual(result['frozen']['config']['trainable_modules'], ['head'])
@@ -117,7 +118,17 @@ class ExperimentsTest(unittest.TestCase):
         self.assertTrue(result['frozen']['comparison']['pretraining_reused'])
         self.assertEqual(len(list((output / 'shared_binary').glob('*/seed_42/results.json'))), 1)
         comparison = json.loads((output / 'comparison_seed_42.json').read_text())
-        self.assertEqual(len(comparison), 3)
+        self.assertEqual(len(comparison), 4)
+        baseline = result['direct_5k']
+        self.assertEqual(baseline['config']['stage'], 'direct')
+        self.assertEqual(baseline['config']['sample_counts'], {'train': 7, 'validation': 7, 'test': 7})
+        self.assertIsNone(baseline['config']['init_checkpoint_sha256'])
+        self.assertFalse(baseline['config']['freeze_backbone'])
+        self.assertEqual(baseline['config']['trainable_modules'], ['fusion', 'head', 'image_encoder', 'text_encoder'])
+        self.assertEqual(baseline['comparison']['binary_labeled_train_samples'], 0)
+        self.assertEqual(baseline['comparison']['pretraining_train_seconds'], 0)
+        self.assertIsNone(baseline['comparison']['stage2_train_seconds'])
+        self.assertFalse((output / 'direct_5k/seed_42/pretraining.json').exists())
         for variant, r in result.items():
             self.assertEqual(sum(sum(row) for row in r['test']['confusion_matrix']), 7)
             self.assertGreater(r['efficiency']['samples_per_second'], 0)
@@ -225,9 +236,13 @@ class ExperimentsTest(unittest.TestCase):
         binary = stage_rows(self.rows, 'full', binary=True)
         self.assertEqual({r['split'] for r in binary}, {'train', 'validation'})
         self.assertEqual({r['label'] for r in binary}, {0, 1})
-        for variant in ('direct', 'full', 'frozen'):
+        for variant in ('direct', 'full', 'frozen', 'direct_5k'):
             selected = stage_rows(self.rows, variant)
             self.assertEqual({r['id'] for r in selected if r['split'] == 'test'}, {r['id'] for r in self.rows if r['split'] == 'test'})
+        baseline = stage_rows(self.rows, 'direct_5k')
+        self.assertEqual({r['id'] for r in baseline if r['split'] == 'train'},
+                         {r['id'] for r in self.rows if r['split'] == 'target'})
+        self.assertEqual({r['label'] for r in baseline if r['split'] == 'train'}, set(range(7)))
 
     def test_wandb_offline_logs_metrics_and_summary(self):
         args = self.args(self.root / 'offline', epochs=2, wandb_mode='offline')

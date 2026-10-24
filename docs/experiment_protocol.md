@@ -1,6 +1,6 @@
 # 实验协议
 
-## 模型和三个训练方案
+## 模型和四个训练方案
 
 默认模型为：ImageNet预训练ViT-B/16（768维）+ `FacebookAI/roberta-base`（attention-mask均值池化，768维）→ 拼接1536维 → Linear256 / LayerNorm / ReLU → Dropout0.5 / Linear分类头。
 
@@ -9,10 +9,13 @@
 | Direct | 20,000源样本+5,000目标样本，直接七分类，全参数训练 | 无 |
 | Full | 20,000源样本二分类，全参数训练 | 替换新七分类头，在5,000样本上整体微调 |
 | Frozen | 与Full共享同一个二分类checkpoint | 替换新七分类头，冻结两个编码器及融合层，仅训练新头 |
+| Direct 5k（V4） | 从通用预训练ViT/RoBERTa开始，仅5,000目标样本直接七分类，全参数训练 | 无 |
 
 第二阶段分别创建新的优化器和调度器；保留源checkpoint中的编码器和融合层权重，丢弃二分类头。Full/Frozen的七分类头初始化、seed和样本顺序相同。冻结主干保持eval模式、关闭主干梯度，分类头仍为训练模式。特征没有离线缓存，每个batch仍需执行ViT和RoBERTa前向。
 
-最终三版都包含约2.10亿参数。Frozen只有1,799个参数参与更新，不等于推理模型被压缩成1,799个参数。可选 `--architecture vit`用于另一组纯图像实验；不得与本报告的图文结果混合。
+最终四版都包含约2.10亿参数。Frozen只有1,799个参数参与更新，不等于推理模型被压缩成1,799个参数。可选 `--architecture vit`用于另一组纯图像实验；不得与本报告的图文结果混合。
+
+V4的网络初始化、全参数更新、优化器和选模规则与V1一致，训练样本改为固定目标5k清单；不读取二分类checkpoint。V4继续复用原验证/测试集，未把未使用的源20k重新划入评估集。同样的20轮上限与5% warmup比例在5k和25k下对应不同的计划优化步数，因此V1与V4并非固定计算量的比较。V4与V2第二阶段的5k样本、计划步数和可训练范围相同，但V2多了源二分类监督与计算，不能宣称两者整体监督或计算预算相同。
 
 ## 数据
 
@@ -51,18 +54,19 @@
 | 二分类选模指标 | 验证macro-F1 |
 | 七分类选模指标 | 验证accuracy |
 
-`best.pt`按选模指标严格提升时更新；同分保留更早轮次。`best_accuracy.pt`始终按accuracy选择，`last.pt`用于恢复。早停检查每epoch一次。本次实际为源二分类7轮、Direct6轮、Full第二阶段6轮、Frozen第二阶段20轮。
+`best.pt`按选模指标严格提升时更新；同分保留更早轮次。`best_accuracy.pt`始终按accuracy选择，`last.pt`用于恢复。早停检查每epoch一次。本次实际为源二分类7轮、Direct6轮、Full第二阶段6轮、Frozen第二阶段20轮、Direct 5k 12轮。
 
 ## 效率与W&B
 
-每阶段一个run；共享二分类标记 `variant=shared_binary, stage=binary`，最终三版为 `direct/direct`、`full/stage2`、`frozen/stage2`。每25步及epoch末记录指标，所有最终run摘要使用共同 `comparison/*` 字段。
+每阶段一个run；共享二分类标记 `variant=shared_binary, stage=binary`，最终四版为 `direct/direct`、`full/stage2`、`frozen/stage2`、`direct_5k/direct`。每25步及epoch末记录指标，所有最终run摘要使用共同 `comparison/*` 字段。V4加入原有W&B分组，历史分组名称中的three不表示仅含三个方案。
 
 - `train_seconds`计训练循环，包括数据读取、GPU计算、优化和定期日志；使用单调时钟，并在GPU阶段边界同步。
 - `validation_seconds`、`checkpoint_seconds`分别记录验证及保存成本。
 - `stage_wall_seconds`计设置、训练、验证、保存与最终测试；不包含外部数据预处理、停机等待、W&B最后上传等待和进程启动外部开销。
 - `total_train_seconds`、`total_stage_wall_seconds`对Full/Frozen均计入二分类原始成本；`stage2_*`只比较微调阶段。
+- V4没有源二分类阶段，整体成本等于自身七分类阶段成本；其 `stage2_*`为空，不伪装成第二阶段。报告中的5k阶段效率表可将V4自身计时与Full/Frozen第二阶段对照。
 - 峰值显存覆盖epoch训练与验证；整个Frozen方案的峰值仍包含源预训练，不能只引用第二阶段低显存。
-- 按验证accuracy随训练时间绘制收敛曲线；默认达标阈值80%，未达到时为空值。本次三个七分类模型均未达到。
+- 按验证accuracy随训练时间绘制收敛曲线；默认达标阈值80%，未达到时为空值。本次四个七分类模型均未达到。
 
 比较目录校验共同数据、架构、超参数、框架版本、GPU型号、batch和日志模式。GPU上的其他任务仍会影响计时，应使用空闲GPU并串行运行。中断恢复累计已完成epoch；丢失的半轮耗时无法恢复，不能把累计值解释为包含所有失败尝试的账单成本。
 

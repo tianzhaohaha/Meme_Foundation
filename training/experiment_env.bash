@@ -1,4 +1,4 @@
-# Shared environment for the three experiment launchers.
+# Shared environment for the experiment launchers.
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname -- "$SCRIPT_DIR")"
 if [[ -x "$PROJECT_DIR/.venv/bin/python" ]]; then
