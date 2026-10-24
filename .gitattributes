@@ -3,5 +3,7 @@
 *.bash text eol=lf
 *.py text eol=lf
 *.tsv text eol=lf
+# Preserve the distributed manifest bytes recorded in embedding_analysis/SHA256SUMS.
+embedding_analysis/manifests/*.tsv -text
 *.png binary
 *.pdf binary

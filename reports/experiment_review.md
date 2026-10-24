@@ -1,5 +1,7 @@
 # 六版本监督实验与Qwen零样本评估
 
+另见并列的[Binary/V4/V5/V6特征可视化报告](embedding_visualization.md)：使用相同validation，展示256维融合特征的PCA/t-SNE七类与极性着色，不增加训练实验。
+
 实验日期：2026-10-24，Asia/Singapore。原V1→V2→V3队列约16:23–17:09；V4随后独立补跑，V5→V6于19:38–19:47在相同GPU上串行补跑。原六个监督方案使用ViT-B/16 + RoBERTa-base、seed42、同一NVIDIA H200 NVL、batch16与FP32。依据为W&B live API和本地结果，七个训练run均为finished，关键summary与逐epoch指标已核对一致（允许浮点序列化舍入误差）。同日新增两个Qwen零样本validation评估run，结果单独列于后文；均未覆盖历史模型和结果。
 
 ## 配置与比较关系

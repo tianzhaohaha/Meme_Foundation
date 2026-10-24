@@ -1,0 +1,234 @@
+{
+  "split": "validation",
+  "sample_count": 2000,
+  "feature_space": "fusion",
+  "feature_dimension": 256,
+  "feature_matrices_published": false,
+  "models": [
+    {
+      "model": "Binary",
+      "variant": "shared_binary",
+      "epoch": 3,
+      "split": "validation",
+      "sample_count": 2000,
+      "class_names": [
+        "Angry",
+        "Bored",
+        "Calm",
+        "Fear",
+        "Happy",
+        "Love",
+        "Sad"
+      ],
+      "manifest_sha256": "70a0afd9ecede8dc3d1c11921eb5fb6df321c3d3bfeaa540cf9950d34414b78f",
+      "checkpoint_sha256": "a098806de821c9d0fde3d90399fa5ef4de06fff4b9c774de6495a97b0d18ee53",
+      "init_checkpoint_sha256": null,
+      "num_classes": 2,
+      "output_class_names": [
+        "negative",
+        "positive"
+      ],
+      "metrics_task": "binary_polarity",
+      "plot_label_policy": "Always true seven-class labels; never predicted labels, including Binary",
+      "input_signature": "c425941088dd5bb6c1d6773d4bb4f87370e446fda53504c3afc3da0a71823fc6",
+      "text_max_length": 96,
+      "text_model_revision": "e2da8e2f811d1448a5b465c236feacd80ffbac7b",
+      "dataset_id": "a9f13a8df640afb82d4e1f233841e2db229eb40a641ae0a1cad79c01b5003ab0",
+      "feature_definition": "256-D Linear -> LayerNorm -> ReLU, before dropout/head",
+      "encoded_definition": "ViT CLS 768 + masked-mean RoBERTa 768; before fusion",
+      "metrics": {
+        "accuracy": 0.8175,
+        "macro_f1": 0.8169563144931232
+      },
+      "validation_reproduction": {
+        "accuracy": {
+          "checkpoint": 0.8175,
+          "actual": 0.8175,
+          "matches": true
+        },
+        "macro_f1": {
+          "checkpoint": 0.8169563144931232,
+          "actual": 0.8169563144931232,
+          "matches": true
+        }
+      },
+      "device": "cuda",
+      "torch": "2.8.0+cu128",
+      "feature_file_sha256": "b7ddba52449fb4c32731e68e460a0a02d9912d72878a0a2823b1580092d32580"
+    },
+    {
+      "model": "V4",
+      "variant": "direct_5k",
+      "epoch": 8,
+      "split": "validation",
+      "sample_count": 2000,
+      "class_names": [
+        "Angry",
+        "Bored",
+        "Calm",
+        "Fear",
+        "Happy",
+        "Love",
+        "Sad"
+      ],
+      "manifest_sha256": "70a0afd9ecede8dc3d1c11921eb5fb6df321c3d3bfeaa540cf9950d34414b78f",
+      "checkpoint_sha256": "bf1dcb223ba26c93915a9606f8adfd2bc1a1810af98f402ace17c68684337283",
+      "init_checkpoint_sha256": null,
+      "num_classes": 7,
+      "output_class_names": [
+        "Angry",
+        "Bored",
+        "Calm",
+        "Fear",
+        "Happy",
+        "Love",
+        "Sad"
+      ],
+      "metrics_task": "seven_class_emotion",
+      "plot_label_policy": "Always true seven-class labels; never predicted labels, including Binary",
+      "input_signature": "c425941088dd5bb6c1d6773d4bb4f87370e446fda53504c3afc3da0a71823fc6",
+      "text_max_length": 96,
+      "text_model_revision": "e2da8e2f811d1448a5b465c236feacd80ffbac7b",
+      "dataset_id": "a9f13a8df640afb82d4e1f233841e2db229eb40a641ae0a1cad79c01b5003ab0",
+      "feature_definition": "256-D Linear -> LayerNorm -> ReLU, before dropout/head",
+      "encoded_definition": "ViT CLS 768 + masked-mean RoBERTa 768; before fusion",
+      "metrics": {
+        "accuracy": 0.565,
+        "macro_f1": 0.5423889004298481
+      },
+      "validation_reproduction": {
+        "accuracy": {
+          "checkpoint": 0.565,
+          "actual": 0.565,
+          "matches": true
+        },
+        "macro_f1": {
+          "checkpoint": 0.5423889004298481,
+          "actual": 0.5423889004298481,
+          "matches": true
+        }
+      },
+      "device": "cuda",
+      "torch": "2.8.0+cu128",
+      "feature_file_sha256": "92ddade09d5c082082ba951b538d2030ddb974c98874facb964843915938d8ca"
+    },
+    {
+      "model": "V5",
+      "variant": "reset_fusion",
+      "epoch": 4,
+      "split": "validation",
+      "sample_count": 2000,
+      "class_names": [
+        "Angry",
+        "Bored",
+        "Calm",
+        "Fear",
+        "Happy",
+        "Love",
+        "Sad"
+      ],
+      "manifest_sha256": "70a0afd9ecede8dc3d1c11921eb5fb6df321c3d3bfeaa540cf9950d34414b78f",
+      "checkpoint_sha256": "ae0efe98e76b41286ba8268e4dd05af202a22a1e3e8e3709621c84112c79977a",
+      "init_checkpoint_sha256": "a098806de821c9d0fde3d90399fa5ef4de06fff4b9c774de6495a97b0d18ee53",
+      "num_classes": 7,
+      "output_class_names": [
+        "Angry",
+        "Bored",
+        "Calm",
+        "Fear",
+        "Happy",
+        "Love",
+        "Sad"
+      ],
+      "metrics_task": "seven_class_emotion",
+      "plot_label_policy": "Always true seven-class labels; never predicted labels, including Binary",
+      "input_signature": "c425941088dd5bb6c1d6773d4bb4f87370e446fda53504c3afc3da0a71823fc6",
+      "text_max_length": 96,
+      "text_model_revision": "e2da8e2f811d1448a5b465c236feacd80ffbac7b",
+      "dataset_id": "a9f13a8df640afb82d4e1f233841e2db229eb40a641ae0a1cad79c01b5003ab0",
+      "feature_definition": "256-D Linear -> LayerNorm -> ReLU, before dropout/head",
+      "encoded_definition": "ViT CLS 768 + masked-mean RoBERTa 768; before fusion",
+      "metrics": {
+        "accuracy": 0.548,
+        "macro_f1": 0.5178129830289993
+      },
+      "validation_reproduction": {
+        "accuracy": {
+          "checkpoint": 0.548,
+          "actual": 0.548,
+          "matches": true
+        },
+        "macro_f1": {
+          "checkpoint": 0.5178129830289993,
+          "actual": 0.5178129830289993,
+          "matches": true
+        }
+      },
+      "device": "cuda",
+      "torch": "2.8.0+cu128",
+      "feature_file_sha256": "4ec434b00c9d4e0b765101f3357d368e61d3b5d51930df453a1b08d449b5c832"
+    },
+    {
+      "model": "V6",
+      "variant": "tune_fusion",
+      "epoch": 4,
+      "split": "validation",
+      "sample_count": 2000,
+      "class_names": [
+        "Angry",
+        "Bored",
+        "Calm",
+        "Fear",
+        "Happy",
+        "Love",
+        "Sad"
+      ],
+      "manifest_sha256": "70a0afd9ecede8dc3d1c11921eb5fb6df321c3d3bfeaa540cf9950d34414b78f",
+      "checkpoint_sha256": "8749f0f1d8fe32da911071ac8fbd9e7795870e98ed53592a42e6efc5920b281f",
+      "init_checkpoint_sha256": "a098806de821c9d0fde3d90399fa5ef4de06fff4b9c774de6495a97b0d18ee53",
+      "num_classes": 7,
+      "output_class_names": [
+        "Angry",
+        "Bored",
+        "Calm",
+        "Fear",
+        "Happy",
+        "Love",
+        "Sad"
+      ],
+      "metrics_task": "seven_class_emotion",
+      "plot_label_policy": "Always true seven-class labels; never predicted labels, including Binary",
+      "input_signature": "c425941088dd5bb6c1d6773d4bb4f87370e446fda53504c3afc3da0a71823fc6",
+      "text_max_length": 96,
+      "text_model_revision": "e2da8e2f811d1448a5b465c236feacd80ffbac7b",
+      "dataset_id": "a9f13a8df640afb82d4e1f233841e2db229eb40a641ae0a1cad79c01b5003ab0",
+      "feature_definition": "256-D Linear -> LayerNorm -> ReLU, before dropout/head",
+      "encoded_definition": "ViT CLS 768 + masked-mean RoBERTa 768; before fusion",
+      "metrics": {
+        "accuracy": 0.563,
+        "macro_f1": 0.5340142477718036
+      },
+      "validation_reproduction": {
+        "accuracy": {
+          "checkpoint": 0.563,
+          "actual": 0.563,
+          "matches": true
+        },
+        "macro_f1": {
+          "checkpoint": 0.5340142477718036,
+          "actual": 0.5340142477718036,
+          "matches": true
+        }
+      },
+      "device": "cuda",
+      "torch": "2.8.0+cu128",
+      "feature_file_sha256": "e1a277a87c29403198704cf70f8cf1ad0ff2a0f3a4125e709829fba81fd80364"
+    }
+  ],
+  "checks": {
+    "all_prediction_metrics_match_checkpoint": true,
+    "all_model_inputs_identical": true,
+    "all_coordinate_rows_match_committed_validation": true,
+    "v5_v6_source_sha256_matches_selected_binary": true
+  }
+}

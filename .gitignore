@@ -41,6 +41,8 @@ wandb/
 *.pid
 *.lock
 STOP
+embedding_analysis/results/
+*.npz
 
 # Credentials and machine-specific settings
 .env

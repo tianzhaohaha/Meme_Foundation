@@ -58,12 +58,14 @@ seed42，NVIDIA H200 NVL，batch16，FP32；七个监督训练W&B run均已完�
 - [可重绘的聚合数据](reports/data/seed42.json)
 - [实验配置与比较口径](docs/experiment_protocol.md)
 - [Qwen零样本validation协议及运行命令](docs/vlm_validation.md)
+- [Binary/V4/V5/V6的PCA与t-SNE可视化报告](reports/embedding_visualization.md)
 
 ## 目录
 
 ```text
 Meme_Foundation/
   training/                 # 六个版本启动器，以及baseline/fusion/all后台队列
+  embedding_analysis/       # Binary/V4/V5/V6特征提取和PCA/t-SNE可视化
   tests/                    # 小模型集成测试、后台队列测试
   tools/plot_results.py      # 从聚合结果重绘图表
   data/manifests/            # 20k/5k训练清单、验证/测试ID清单
