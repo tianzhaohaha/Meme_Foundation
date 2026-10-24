@@ -1,0 +1,32 @@
+[
+  {
+    "model": "Qwen/Qwen3-VL-4B-Instruct",
+    "id": "bd4f6eae9e94",
+    "state": "finished",
+    "url": "https://forge.coreweave.com/wandb/ql2505-columbia-university/tumemo-training-comparison/runs/bd4f6eae9e94",
+    "checked_summary": {
+      "validation/accuracy": 0.4775,
+      "validation/macro_f1": 0.45377448345810534,
+      "validation/invalid_outputs": 1,
+      "validation/samples": 2000,
+      "efficiency/evaluation_seconds": 25.30582908168435
+    },
+    "model_revision": "ebb281ec70b05090aa6165b016eac8ec08e71b17",
+    "model_inputs_sha256": "e2a2b6839a2e9c566fb6749413b780d71ae5c13c7be2b49657c052337e0de18b"
+  },
+  {
+    "model": "Qwen/Qwen3-VL-8B-Instruct",
+    "id": "faa86c57aec0",
+    "state": "finished",
+    "url": "https://forge.coreweave.com/wandb/ql2505-columbia-university/tumemo-training-comparison/runs/faa86c57aec0",
+    "checked_summary": {
+      "validation/accuracy": 0.489,
+      "validation/macro_f1": 0.47284929320314123,
+      "validation/invalid_outputs": 3,
+      "validation/samples": 2000,
+      "efficiency/evaluation_seconds": 34.44674509949982
+    },
+    "model_revision": "0c351dd01ed87e9c1b53cbc748cba10e6187ff3b",
+    "model_inputs_sha256": "e2a2b6839a2e9c566fb6749413b780d71ae5c13c7be2b49657c052337e0de18b"
+  }
+]

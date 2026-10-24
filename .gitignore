@@ -27,6 +27,7 @@ background_comparison/
 background_v4/
 background_fusion/
 background_all/
+background_vlm/
 wandb/
 *.pt
 *.pth

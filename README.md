@@ -1,6 +1,8 @@
-# TumEmo 图文情绪分类：六种训练策略
+# TumEmo 图文情绪分类：六种训练策略与Qwen零样本评估
 
 使用 **ViT-B/16 + RoBERTa-base**，对比直接训练、源二分类迁移和融合层消融六种方案。训练、准确率和效率指标统一记录到 W&B，支持SSH后台运行和checkpoint恢复。
+
+另在同一2,000条validation上完成Qwen3-VL-4B/8B-Instruct零样本七分类，accuracy分别为 **47.75% / 48.90%**，macro-F1为 **0.4538 / 0.4728**。原V1/V4在validation上为57.55%/56.50%；这些数字与下方test结果分开比较。详见[技术报告](reports/experiment_review.md#qwen零样本七分类同一2000条validation)和[VLM复现说明](docs/vlm_validation.md)。
 
 | 方案 | 数据与训练过程 | 七分类阶段更新范围 |
 |---|---|---|
@@ -29,13 +31,14 @@ python3.12 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements-analysis.txt
 python tools/plot_results.py
+python tools/plot_vlm_results.py
 ```
 
 完整训练使用下面的环境和数据准备步骤，或者直接按 [复现指南](docs/reproduction.md) 执行。报告中的历史数值来自已完成的seed42实验；读者重跑的输出写入新的运行目录，不会改写已提交的报告。
 
 ## 已完成的实验
 
-seed42，NVIDIA H200 NVL，batch16，FP32；七个W&B run均已完成，云端summary与逐epoch曲线已和本地记录核对。
+seed42，NVIDIA H200 NVL，batch16，FP32；七个监督训练W&B run均已完成，云端summary与逐epoch曲线已和本地记录核对。
 
 | 方案 | 测试accuracy | 测试macro-F1 | 完整方案阶段耗时 | 七分类训练轮数 |
 |---|---:|---:|---:|---:|
@@ -54,6 +57,7 @@ seed42，NVIDIA H200 NVL，batch16，FP32；七个W&B run均已完成，云端su
 - [checkpoint逐文件对应表](reports/checkpoints.md) / [CSV](reports/checkpoints.csv)
 - [可重绘的聚合数据](reports/data/seed42.json)
 - [实验配置与比较口径](docs/experiment_protocol.md)
+- [Qwen零样本validation协议及运行命令](docs/vlm_validation.md)
 
 ## 目录
 
@@ -260,6 +264,6 @@ python tools/plot_results.py
 
 ## 发布范围
 
-仓库只跟踪代码、依赖版本、样本ID/标签清单、数据指纹、测试及技术报告。checkpoint索引是历史文件的元数据，不代表GitHub提供了对应权重；重新训练后会生成自己的checkpoint。
+仓库只跟踪代码、依赖版本、样本ID/标签清单、数据指纹、测试及技术报告，另保存Qwen的逐样本标签预测以便核验指标。checkpoint索引是历史文件的元数据，不代表GitHub提供了对应权重；重新训练后会生成自己的checkpoint。
 
 数据包目前需向仓库维护者获取。预训练模型由训练代码从其官方来源下载，数据和预训练模型遵循各自使用条件。本仓库暂未附通用开源许可证。

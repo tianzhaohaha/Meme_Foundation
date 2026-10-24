@@ -90,3 +90,17 @@ python training/smoke_comparison_gpu.py
 ```
 
 测试涵盖六组数据路由、融合层重置、冻结模块、断点恢复、后台队列、数据指纹和W&B离线记录。W&B离线服务仍需要本机socket权限。
+
+## 7. 复现Qwen零样本validation评估
+
+沿用同一环境及已准备的数据缓存即可运行，不需要先训练六版模型：
+
+```bash
+bash training/run_vlm_validation.sh
+python tools/collect_vlm_results.py
+python tools/plot_vlm_results.py \
+  --input training/runs_vlm/analysis/vlm_validation.json \
+  --output training/runs_vlm/analysis/figures
+```
+
+这会依次评估Qwen3-VL-4B和8B的固定Instruct版本，只使用validation。首次下载约27 GB；环境、输入限制、SSH后台启动与断点恢复见[VLM协议](vlm_validation.md)。只重绘已发布的VLM图表时，安装 `requirements-analysis.txt` 后执行 `python tools/plot_vlm_results.py` 即可，不需要模型或数据。

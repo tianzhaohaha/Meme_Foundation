@@ -1,0 +1,9 @@
+name,kind,validation_accuracy,validation_macro_f1,invalid_outputs,evaluation_seconds,samples_per_second,peak_allocated_gpu_gib
+V1,supervised_validation_selected,0.5755,0.5546822995531795,0,,,
+V2,supervised_validation_selected,0.5465,0.5127791161735923,0,,,
+V3,supervised_validation_selected,0.4165,0.2608014512084988,0,,,
+V4,supervised_validation_selected,0.565,0.5423889004298481,0,,,
+V5,supervised_validation_selected,0.548,0.5178129830289993,0,,,
+V6,supervised_validation_selected,0.563,0.5340142477718036,0,,,
+Qwen3-VL 4B,zero_shot,0.4775,0.45377448345810534,1,25.30582908168435,79.03317427554839,9.260449886322021
+Qwen3-VL 8B,zero_shot,0.489,0.47284929320314123,3,34.44674509949982,58.06063807256613,17.39891004562378

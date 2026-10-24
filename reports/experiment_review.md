@@ -1,6 +1,6 @@
-# 六版本实验结果分析
+# 六版本监督实验与Qwen零样本评估
 
-实验日期：2026-10-24，Asia/Singapore。原V1→V2→V3队列约16:23–17:09；V4随后独立补跑，V5→V6于19:38–19:47在相同GPU上串行补跑。所有方案使用ViT-B/16 + RoBERTa-base、seed42、同一NVIDIA H200 NVL、batch16与FP32。依据为W&B live API和本地结果，七个run均为finished，关键summary与逐epoch指标已核对一致（允许浮点序列化舍入误差）。新增实验均未覆盖历史模型和结果。
+实验日期：2026-10-24，Asia/Singapore。原V1→V2→V3队列约16:23–17:09；V4随后独立补跑，V5→V6于19:38–19:47在相同GPU上串行补跑。原六个监督方案使用ViT-B/16 + RoBERTa-base、seed42、同一NVIDIA H200 NVL、batch16与FP32。依据为W&B live API和本地结果，七个训练run均为finished，关键summary与逐epoch指标已核对一致（允许浮点序列化舍入误差）。同日新增两个Qwen零样本validation评估run，结果单独列于后文；均未覆盖历史模型和结果。
 
 ## 配置与比较关系
 
@@ -104,11 +104,69 @@ V3从未预测Angry，把84.1%的样本预测成Happy或Bored，说明accuracy�
 
 ![各类别混淆矩阵](figures/confusion_matrices.png)
 
+## Qwen零样本七分类：同一2,000条validation
+
+新增 **Qwen3-VL-4B-Instruct** 和 **Qwen3-VL-8B-Instruct**，均直接用通用模型做七分类，没有任务微调、示例提示或提示词搜索。两者沿用同一validation清单、224×224缓存图片和清洗后文本；文本限制到原RoBERTa `max_length=96`对应的前缀，2,000条中364条被截断。固定相同英文提示词、greedy生成、最多16个新token；模型revision、输入指纹及完整协议见[复现说明](../docs/vlm_validation.md)。
+
+**此节所有accuracy和macro-F1均来自validation，不是前文的test。** V1–V6曾在这份validation上选择最佳epoch，而Qwen未在该集合上训练或调整提示词；表格用于描述同一集合上的表现，不能视为独立test排名或相同训练预算对照。
+
+| 模型 | 本任务适应方式 | Validation accuracy | Validation macro-F1 |
+|---|---|---:|---:|
+| V1 Direct 25k | 25k七分类监督，验证选模 | **57.55%** | **0.5547** |
+| V2 Full | 20k二分类→5k全参数微调，验证选模 | 54.65% | 0.5128 |
+| V3 Frozen | 20k二分类→5k仅训练头，验证选模 | 41.65% | 0.2608 |
+| V4 Direct 5k | 5k七分类监督，验证选模 | 56.50% | 0.5424 |
+| V5 Reset fusion | 20k二分类→重置融合层后5k微调，验证选模 | 54.80% | 0.5178 |
+| V6 Tune fusion | 20k二分类→5k训练融合层和头，验证选模 | 56.30% | 0.5340 |
+| [Qwen3-VL 4B](https://forge.coreweave.com/wandb/ql2505-columbia-university/tumemo-training-comparison/runs/bd4f6eae9e94) | 零样本 | 47.75%（955/2,000） | 0.4538 |
+| [Qwen3-VL 8B](https://forge.coreweave.com/wandb/ql2505-columbia-university/tumemo-training-comparison/runs/faa86c57aec0) | 零样本 | 48.90%（978/2,000） | 0.4728 |
+
+8B相对4B提高1.15个百分点，多答对23条；macro-F1提高0.0191。两者优于本次V3冻结头方案，但低于其余五个监督方案。8B相对V1低8.65个百分点、相对V4低7.60个百分点。当前结果只支持这套零样本提示和受控输入下的观察，不能推断VLM经过微调、高分辨率输入或其他提示设置后仍有同样排序。
+
+![同一validation上的效果与Qwen推理成本](figures/vlm_validation.png)
+
+### Qwen推理效率
+
+两者在同一H200 NVL GPU 0上串行运行，batch16、BF16、SDPA，无量化。下表是推理成本，**不能与前文的训练时间直接比较**。
+
+| 指标 | Qwen3-VL 4B | Qwen3-VL 8B |
+|---|---:|---:|
+| 实际参数数 | 4,437,815,808 | 8,767,123,696 |
+| 2,000条推理耗时 | 25.31秒 | 34.45秒 |
+| 吞吐量 | 79.03样本/秒 | 58.06样本/秒 |
+| batch吞吐折算每样本耗时 | 12.65毫秒 | 17.22毫秒 |
+| 峰值allocated显存 | 9.26 GiB | 17.40 GiB |
+| 本地缓存权重加载 | 2.18秒 | 3.62秒 |
+| 合成输入预热 | 1.23秒 | 0.75秒 |
+| 无效输出（已计错） | 1（0.05%） | 3（0.15%） |
+
+8B耗时增加36.12%，峰值allocated显存增加87.88%，获得上述1.15个百分点的accuracy提升。推理耗时包含图像读取、processor、设备传输、生成和解码，排除模型下载/加载、预热、结果写盘和W&B同步；折算每样本耗时不是单请求延迟。每种规模只完整测量一次，不能视为跨硬件或重复运行的稳定性能界限。
+
+### 类别差异与解释边界
+
+| Validation召回率 | Qwen3-VL 4B | Qwen3-VL 8B |
+|---|---:|---:|
+| Angry | 42.24% | 40.52% |
+| Bored | 15.73% | 25.00% |
+| Calm | 59.89% | 67.38% |
+| Fear | 45.12% | 39.07% |
+| Happy | 76.48% | 73.43% |
+| Love | 20.52% | 28.61% |
+| Sad | 64.57% | 55.61% |
+
+主要不足集中在Bored和Love。真实Bored有356条，4B/8B只分别预测57/109条为Bored；真实Love有346条，其中202/172条被预测为Happy。两者分别把931/883条预测为Happy，而真实Happy为557条。8B对Bored、Calm、Love的召回更好，但并非每个类别都提升。
+
+![Qwen validation混淆矩阵](figures/vlm_confusion_matrices.png)
+
+这些分布说明通用零样本情绪判断与本数据集的七类标注存在偏差，但不足以区分标签语义、领域分布、提示方式和图像分辨率各自的因果贡献。224×224限制控制了与原模型的视觉信息量，也限制了VLM使用高分辨率细节；未审计Qwen通用预训练语料与本数据的重叠。当前没有通过查看结果后修改提示词来提高该validation分数。
+
+两次评估均完整保存2,000条预测，重新计算指标后与本地汇总一致，并核对W&B的finished状态、summary、模型revision及输入指纹。参见[聚合JSON](data/vlm_validation.json)、[对比CSV](data/vlm_validation.csv)、[逐样本标签预测](data/vlm_predictions.csv)和[云端核验记录](data/vlm_wandb_verification.json)。公开预测仅含样本ID、真实标签和预测标签，不含原始图片或文本。
+
 ## 结论边界与文件
 
 - V4补齐了“仅有5k七分类标签、不先做源二分类训练”的基线；与V2比较时同时看最终质量、5k阶段成本和完整方案成本。
 - V1使用额外20k细类标签。相同epoch上限不等于相同训练步数或计算预算；本实验不是固定算力消融。
-- 当前只有seed42，未做多seed显著性检验，也没有保存逐样本预测供配对检验。V4是在已查看前三版测试结果后提出的补充基线，但其训练超参数保持原值；如继续根据这些结果优化方案，应使用新的独立最终评估。
+- 六版监督实验当前只有seed42，未做多seed显著性检验，也没有保存这些模型的逐样本预测供配对检验；新增Qwen评估单独保留了逐样本validation预测。V4是在已查看前三版测试结果后提出的补充基线，但其训练超参数保持原值；如继续根据这些结果优化方案，应使用新的独立最终评估。
 - 源/目标清单仍共有227个图片哈希；验证/测试已排除精确图片和规范化非空文本重复，但没有完整近重复或跨用户审计。
 
 所有21个checkpoint的历史对应关系见[文件索引](checkpoints.md)。完整指标见[聚合JSON](data/seed42.json)和[CSV](comparison.csv)，图表用 `python tools/plot_results.py` 重绘。GitHub仅发布代码和分析材料，不包含checkpoint或原始数据；获取相同数据后可按[复现指南](../docs/reproduction.md)重新训练。
